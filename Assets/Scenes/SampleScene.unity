@@ -538,9 +538,11 @@ MonoBehaviour:
     roomSize: 10
     corridorSize: 5
     doorSize: 4
-    floorHeight: 20
+    floorHeight: 12
     maxFloorUsage: 0
     wallThickness: 1
+    floorThickness: 1
+  size: {x: 100, y: 100, z: 100}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

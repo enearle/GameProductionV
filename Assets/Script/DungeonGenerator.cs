@@ -15,6 +15,7 @@ public class DungeonGenerator : MonoBehaviour
         public int floorHeight;
         public float maxFloorUsage;
         public int wallThickness;
+        public int floorThickness;
     }
 
     public struct SectionBounds
@@ -25,22 +26,38 @@ public class DungeonGenerator : MonoBehaviour
             maxZ = position.z + size.z;
             minX = position.x;
             minZ = position.z;
+            y = position.y;
+            height = size.y;
         }
         public int maxX;
         public int maxZ;
         public int minX;
         public int minZ;
+        public int y;
+        public int height;
+
+        public Vector3Int GetPosition()
+        {
+            return new Vector3Int(minX, y, minZ);
+        }
+        
+        public Vector3Int GetSize()
+        {
+            return new Vector3Int(maxX - minX, height, maxZ - minZ);
+        }
     }
     
     public class Section
     {
         public Section parent;
-        List<Section> children = new List<Section>();
+        public List<Section> children = new List<Section>();
         public Vector3Int position;
         public Vector3Int size;
-        public uint startFloor;
-        public uint endFloor;
+        public int startFloor;
+        public int endFloor;
         public Vector2Int roomDirection;
+        public bool isRoom;
+        public bool isCorridor;
 
         public bool IntersectsFloor(int floor)
         {
@@ -59,34 +76,55 @@ public class DungeonGenerator : MonoBehaviour
 
     public MinimumMutators minimumMutators;
     int minimumSectionSize;
-    List<Section> rooms = new List<Section>();
+    public List<Section> rooms = new List<Section>();
+    public List<Section> floors = new List<Section>(); // In case I want to retroactively make changes to the dungeon
     
     public void GenerateDungeon(Vector3Int size, MinimumMutators minimumMutators)
     {
         this.minimumMutators = minimumMutators;
         minimumSectionSize = minimumMutators.roomSize * 2 + minimumMutators.corridorSize + minimumMutators.wallThickness * 2;
-        
+
+        for (int i = 0; i < size.y / minimumMutators.floorHeight; i++)
+        {
+            Vector3Int floorSize = new Vector3Int(size.x, minimumMutators.floorHeight, size.z);
+            GenerateFloor(i, floorSize);
+        }
     }
 
-    private void GenerateFloor(uint floor)
+    private void GenerateFloor(int floor, Vector3Int floorSize)
     {
-        
-        
+        Section mainSection = new Section();
+        mainSection.position = -floorSize / 2;
+        mainSection.position.y = floor * minimumMutators.floorHeight;
+        mainSection.size = floorSize;
+        mainSection.size.y -= minimumMutators.floorThickness;
+        mainSection.startFloor = floor;
+        mainSection.endFloor = floor;
+        mainSection.roomDirection = new Vector2Int(0, 1);
+        mainSection = SubdivideSection(mainSection, floor);
+        floors.Add(mainSection);
     }
 
-    private void SubdivideSection(ref Section section, uint floor)
+    private Section SubdivideSection(Section section, int floor)
     {
         if (section.CheckSectionCanBeDivide(minimumSectionSize))
         {
             SectionBounds parentBounds = new SectionBounds(section.position, section.size);
-            SectionBounds corridor = new SectionBounds();
-            SectionBounds rightRoom = new SectionBounds();
-            SectionBounds leftRoom = new SectionBounds();
-            SectionBounds endRoom = new SectionBounds();
+            SectionBounds corridorBounds = new SectionBounds();
+            corridorBounds.y = parentBounds.y;
+            corridorBounds.height = parentBounds.height;
+            SectionBounds rightBounds = new SectionBounds();
+            rightBounds.y = parentBounds.y;
+            rightBounds.height = parentBounds.height;
+            SectionBounds leftBounds = new SectionBounds();
+            leftBounds.y = parentBounds.y;
+            leftBounds.height = parentBounds.height;
+            SectionBounds endBounds = new SectionBounds();
+            endBounds.y = parentBounds.y;
+            endBounds.height = parentBounds.height;
             
-            // TODO Add check that the section isn't abnormal shape and handle edge cases
             
-            
+            // TODO Add checks that the section isn't abnormal shape and handle edge cases
             
             if (section.roomDirection.x == 0 && section.roomDirection.y != 0)
             {
@@ -104,31 +142,31 @@ public class DungeonGenerator : MonoBehaviour
                 else
                 {
                     // Room extends from top boundary
-                    minZ = Random.Range(parentBounds.minZ + minimumMutators.roomSize + 1, 
-                        parentBounds.maxZ - minimumMutators.roomSize);
                     maxZ = parentBounds.maxZ;
+                    minZ = Random.Range(parentBounds.maxZ - minimumMutators.roomSize - 1, 
+                        parentBounds.minZ + minimumMutators.roomSize);
                 }
 
-                corridor.minZ = minZ;
-                corridor.maxZ = maxZ;
-                corridor.minX = Random.Range(minimumMutators.roomSize + 1, 
+                corridorBounds.minZ = minZ;
+                corridorBounds.maxZ = maxZ;
+                corridorBounds.minX = Random.Range(parentBounds.minX + minimumMutators.roomSize + 1, 
                     parentBounds.maxX - minimumMutators.roomSize - minimumMutators.corridorSize - 1);
-                corridor.maxX = corridor.minX + minimumMutators.corridorSize;
+                corridorBounds.maxX = corridorBounds.minX + minimumMutators.corridorSize;
                 
-                rightRoom.minZ = minZ;
-                rightRoom.maxZ = maxZ;
-                rightRoom.minX = upwards ? corridor.maxX + 1 : parentBounds.minX;
-                rightRoom.maxX = !upwards ? corridor.minX - 1 : parentBounds.maxX;
+                rightBounds.minZ = minZ;
+                rightBounds.maxZ = maxZ;
+                rightBounds.minX = upwards ? corridorBounds.maxX + 1 : parentBounds.minX;
+                rightBounds.maxX = upwards ? parentBounds.maxX : corridorBounds.minX - 1;
                 
-                leftRoom.minZ = minZ;
-                leftRoom.maxZ = maxZ;
-                leftRoom.minX = !upwards ? corridor.maxX + 1 : parentBounds.minX;
-                leftRoom.maxX = upwards ? corridor.minX - 1 : parentBounds.maxX;
+                leftBounds.minZ = minZ;
+                leftBounds.maxZ = maxZ;
+                leftBounds.minX = upwards ? parentBounds.minX : corridorBounds.maxX + 1;
+                leftBounds.maxX = upwards ? corridorBounds.minX - 1 : parentBounds.maxX;
                 
-                endRoom.minZ = upwards ? maxZ + 1 : parentBounds.minZ;
-                endRoom.maxZ = !upwards ? minZ - 1 : parentBounds.maxZ;
-                endRoom.minX = parentBounds.minX;
-                endRoom.maxX = parentBounds.maxX;
+                endBounds.minZ = upwards ? maxZ + 1 : parentBounds.minZ;
+                endBounds.maxZ = !upwards ? minZ - 1 : parentBounds.maxZ;
+                endBounds.minX = parentBounds.minX;
+                endBounds.maxX = parentBounds.maxX;
             }
             else if (section.roomDirection.x != 0 && section.roomDirection.y == 0)
             {
@@ -146,48 +184,90 @@ public class DungeonGenerator : MonoBehaviour
                 else
                 {
                     // Room extends from right boundary
-                    minX = Random.Range(parentBounds.minX + minimumMutators.roomSize + 1, 
-                        parentBounds.maxX - minimumMutators.roomSize);
                     maxX = parentBounds.maxX;
+                    minX = Random.Range(parentBounds.maxX - minimumMutators.roomSize - 1,
+                        parentBounds.minX + minimumMutators.roomSize);
                 }
 
-                corridor.minX = minX;
-                corridor.maxX = maxX;
-                corridor.minZ = Random.Range(minimumMutators.roomSize + 1, 
+                corridorBounds.minX = minX;
+                corridorBounds.maxX = maxX;
+                corridorBounds.minZ = Random.Range(parentBounds.minZ + minimumMutators.roomSize + 1, 
                     parentBounds.maxZ - minimumMutators.roomSize - minimumMutators.corridorSize - 1);
-                corridor.maxZ = corridor.minZ + minimumMutators.corridorSize;
+                corridorBounds.maxZ = corridorBounds.minZ + minimumMutators.corridorSize;
     
-                rightRoom.minX = minX;
-                rightRoom.maxX = maxX;
-                rightRoom.minZ = rightwards ? corridor.maxZ + 1 : parentBounds.minZ;
-                rightRoom.maxZ = !rightwards ? corridor.minZ - 1 : parentBounds.maxZ;
+                rightBounds.minX = minX;
+                rightBounds.maxX = maxX;
+                rightBounds.minZ = rightwards ? corridorBounds.maxZ + 1 : parentBounds.minZ;
+                rightBounds.maxZ = rightwards ? parentBounds.maxZ : corridorBounds.minZ - 1;
     
-                leftRoom.minX = minX;
-                leftRoom.maxX = maxX;
-                leftRoom.minZ = !rightwards ? corridor.maxZ + 1 : parentBounds.minZ;
-                leftRoom.maxZ = rightwards ? corridor.minZ - 1 : parentBounds.maxZ;
+                leftBounds.minX = minX;
+                leftBounds.maxX = maxX;
+                leftBounds.minZ = rightwards ? parentBounds.minZ : corridorBounds.maxZ + 1;
+                leftBounds.maxZ = rightwards ? corridorBounds.minZ - 1 : parentBounds.maxZ;
     
-                endRoom.minX = rightwards ? maxX + 1 : parentBounds.minX;
-                endRoom.maxX = !rightwards ? minX - 1 : parentBounds.maxX;
-                endRoom.minZ = parentBounds.minZ;
-                endRoom.maxZ = parentBounds.maxZ;
+                endBounds.minX = rightwards ? maxX + 1 : parentBounds.minX;
+                endBounds.maxX = !rightwards ? minX - 1 : parentBounds.maxX;
+                endBounds.minZ = parentBounds.minZ;
+                endBounds.maxZ = parentBounds.maxZ;
             }
             else
             {
                 Debug.LogError("Section direction is not valid");
-                return;
+                return null;
             }
             
+            Section corridorSection = new Section();
+            corridorSection.parent = section;
+            corridorSection.position = corridorBounds.GetPosition();
+            corridorSection.size = corridorBounds.GetSize();
+            corridorSection.startFloor = floor;
+            corridorSection.endFloor = floor;
+            corridorSection.roomDirection = section.roomDirection;
+            corridorSection.isCorridor = true;
+            section.children.Add(corridorSection);
+            rooms.Add(corridorSection);
+            
+            Section endSection = new Section();
+            endSection.parent = section;
+            endSection.position = endBounds.GetPosition();
+            endSection.size = endBounds.GetSize();
+            endSection.startFloor = floor;
+            endSection.endFloor = floor;
+            endSection.roomDirection = section.roomDirection;
+            section.children.Add(endSection);
+            
+            Section rightSection = new Section();
+            rightSection.parent = section;
+            rightSection.position = rightBounds.GetPosition();
+            rightSection.size = rightBounds.GetSize();
+            rightSection.startFloor = floor;
+            rightSection.endFloor = floor;
+            rightSection.roomDirection = new Vector2Int(section.roomDirection.y, -section.roomDirection.x);
+            section.children.Add(rightSection);
+            
+            Section leftSection = new Section();
+            leftSection.parent = section;
+            leftSection.position = leftBounds.GetPosition();
+            leftSection.size = leftBounds.GetSize();
+            leftSection.startFloor = floor;
+            leftSection.endFloor = floor;
+            leftSection.roomDirection = new Vector2Int(section.roomDirection.y, section.roomDirection.x);
+            section.children.Add(leftSection);
+
+            for (int i = 0; i < section.children.Count; i++)
+                if(!section.children[i].isCorridor)
+                    section.children[i] = SubdivideSection(section.children[i], floor);
+            
+            return section;
         }
         else
         {
+            // TODO add logic to expand into multiple floors
+            section.isRoom = true;
             rooms.Add(section);
+            return section;
         }
-
-    }
-    
-    private int GetHeightFromFloor(int floor)
-    {
+        
         
     }
 
