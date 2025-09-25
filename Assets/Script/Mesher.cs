@@ -63,7 +63,6 @@ public class Mesher : MonoBehaviour
     {
         if (mesh == null)
         {
-            Debug.LogError("Mesh is null");
             mesh = new Mesh();
         }
         mesh.vertices = vertices.ToArray();

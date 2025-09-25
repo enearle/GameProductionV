@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using System.Collections.Generic;
+using UnityEditor.Experimental.GraphView;
 using Random = UnityEngine.Random;
 
 
@@ -16,6 +17,20 @@ public class DungeonGenerator : MonoBehaviour
         public float maxFloorUsage;
         public int wallThickness;
         public int floorThickness;
+    }
+    
+    public enum Direction
+    {
+        North,
+        South,
+        West,
+        East
+    }
+
+    public struct Door
+    {
+        public Vector3Int position;
+        public Vector3Int size;
     }
 
     public struct SectionBounds
@@ -55,10 +70,10 @@ public class DungeonGenerator : MonoBehaviour
         public Vector3Int size;
         public int startFloor;
         public int endFloor;
-        public Vector2Int roomDirection;
+        public Direction roomDirection;
         public bool isRoom;
         public bool isCorridor;
-
+        
         public bool IntersectsFloor(int floor)
         {
             return floor >= startFloor && floor <= endFloor;
@@ -78,6 +93,7 @@ public class DungeonGenerator : MonoBehaviour
     int minimumSectionSize;
     public List<Section> rooms = new List<Section>();
     public List<Section> floors = new List<Section>(); // In case I want to retroactively make changes to the dungeon
+    public List<Door> doors = new List<Door>();
     
     public void GenerateDungeon(Vector3Int size, MinimumMutators minimumMutators)
     {
@@ -88,6 +104,11 @@ public class DungeonGenerator : MonoBehaviour
         {
             Vector3Int floorSize = new Vector3Int(size.x, minimumMutators.floorHeight, size.z);
             GenerateFloor(i, floorSize);
+        }
+
+        foreach (Section section in rooms)
+        {
+            doors.Add(CreateDoor(section));
         }
     }
 
@@ -100,7 +121,7 @@ public class DungeonGenerator : MonoBehaviour
         mainSection.size.y -= minimumMutators.floorThickness;
         mainSection.startFloor = floor;
         mainSection.endFloor = floor;
-        mainSection.roomDirection = new Vector2Int(0, 1);
+        mainSection.roomDirection = Direction.North;
         mainSection = SubdivideSection(mainSection, floor);
         floors.Add(mainSection);
     }
@@ -126,9 +147,9 @@ public class DungeonGenerator : MonoBehaviour
             
             // TODO Add checks that the section isn't abnormal shape and handle edge cases
             
-            if (section.roomDirection.x == 0 && section.roomDirection.y != 0)
+            if (section.roomDirection == Direction.North || section.roomDirection == Direction.South)
             {
-                bool upwards = section.roomDirection.y == 1;
+                bool upwards = section.roomDirection == Direction.North;
                 // Either start at the bottom wall or choose somewhere a room's distance away
                 int minZ, maxZ;
                 
@@ -149,8 +170,9 @@ public class DungeonGenerator : MonoBehaviour
 
                 corridorBounds.minZ = minZ;
                 corridorBounds.maxZ = maxZ;
-                corridorBounds.minX = Random.Range(parentBounds.minX + minimumMutators.roomSize + 1, 
-                    parentBounds.maxX - minimumMutators.roomSize - minimumMutators.corridorSize - 1);
+                corridorBounds.minX = (parentBounds.minX + parentBounds.maxX) / 2 - minimumMutators.corridorSize / 2;  
+                //corridorBounds.minX = Random.Range(parentBounds.minX + minimumMutators.roomSize + 1, 
+                //    parentBounds.maxX - minimumMutators.roomSize - minimumMutators.corridorSize - 1);
                 corridorBounds.maxX = corridorBounds.minX + minimumMutators.corridorSize;
                 
                 rightBounds.minZ = minZ;
@@ -164,13 +186,13 @@ public class DungeonGenerator : MonoBehaviour
                 leftBounds.maxX = upwards ? corridorBounds.minX - 1 : parentBounds.maxX;
                 
                 endBounds.minZ = upwards ? maxZ + 1 : parentBounds.minZ;
-                endBounds.maxZ = !upwards ? minZ - 1 : parentBounds.maxZ;
+                endBounds.maxZ = upwards ? parentBounds.maxZ : minZ - 1;;
                 endBounds.minX = parentBounds.minX;
                 endBounds.maxX = parentBounds.maxX;
             }
-            else if (section.roomDirection.x != 0 && section.roomDirection.y == 0)
+            else if (section.roomDirection == Direction.West || section.roomDirection == Direction.East)
             {
-                bool rightwards = section.roomDirection.x == 1;
+                bool rightwards = section.roomDirection == Direction.East;
                 // Either start at the left wall or choose somewhere a room's distance away
                 int minX, maxX;
     
@@ -191,8 +213,9 @@ public class DungeonGenerator : MonoBehaviour
 
                 corridorBounds.minX = minX;
                 corridorBounds.maxX = maxX;
-                corridorBounds.minZ = Random.Range(parentBounds.minZ + minimumMutators.roomSize + 1, 
-                    parentBounds.maxZ - minimumMutators.roomSize - minimumMutators.corridorSize - 1);
+                corridorBounds.minZ = (parentBounds.minZ + parentBounds.maxZ) / 2 - minimumMutators.corridorSize / 2; 
+                //corridorBounds.minZ = Random.Range(parentBounds.minZ + minimumMutators.roomSize + 1, 
+                //    parentBounds.maxZ - minimumMutators.roomSize - minimumMutators.corridorSize - 1);
                 corridorBounds.maxZ = corridorBounds.minZ + minimumMutators.corridorSize;
     
                 rightBounds.minX = minX;
@@ -206,7 +229,7 @@ public class DungeonGenerator : MonoBehaviour
                 leftBounds.maxZ = rightwards ? corridorBounds.minZ - 1 : parentBounds.maxZ;
     
                 endBounds.minX = rightwards ? maxX + 1 : parentBounds.minX;
-                endBounds.maxX = !rightwards ? minX - 1 : parentBounds.maxX;
+                endBounds.maxX = rightwards ? parentBounds.maxX : minX - 1;
                 endBounds.minZ = parentBounds.minZ;
                 endBounds.maxZ = parentBounds.maxZ;
             }
@@ -242,7 +265,10 @@ public class DungeonGenerator : MonoBehaviour
             rightSection.size = rightBounds.GetSize();
             rightSection.startFloor = floor;
             rightSection.endFloor = floor;
-            rightSection.roomDirection = new Vector2Int(section.roomDirection.y, -section.roomDirection.x);
+            if (section.roomDirection == Direction.North || section.roomDirection == Direction.South)
+                rightSection.roomDirection = ClockWise(section.roomDirection);
+            else
+                rightSection.roomDirection = CounterClockWise(section.roomDirection);
             section.children.Add(rightSection);
             
             Section leftSection = new Section();
@@ -251,7 +277,10 @@ public class DungeonGenerator : MonoBehaviour
             leftSection.size = leftBounds.GetSize();
             leftSection.startFloor = floor;
             leftSection.endFloor = floor;
-            leftSection.roomDirection = new Vector2Int(section.roomDirection.y, section.roomDirection.x);
+            if (section.roomDirection == Direction.North || section.roomDirection == Direction.South)
+                leftSection.roomDirection = CounterClockWise(section.roomDirection);
+            else
+                leftSection.roomDirection = ClockWise(section.roomDirection);
             section.children.Add(leftSection);
 
             for (int i = 0; i < section.children.Count; i++)
@@ -268,7 +297,77 @@ public class DungeonGenerator : MonoBehaviour
             return section;
         }
         
-        
+    }
+    
+    private Door CreateDoor(Section section)
+    {
+        switch (section.roomDirection)
+        {
+            case Direction.South:
+                return new Door()
+                {
+                    position = new Vector3Int(section.position.x + section.size.x / 2 - minimumMutators.doorSize / 2, 
+                        section.position.y, section.position.z + section.size.z),
+                    size = new Vector3Int(minimumMutators.doorSize, minimumMutators.floorHeight, 1)
+                };
+            case Direction.North:
+                return new Door()
+                {
+                    position = new Vector3Int(section.position.x + section.size.x / 2 - minimumMutators.doorSize / 2,
+                        section.position.y, section.position.z - 1),
+                    size = new Vector3Int(minimumMutators.doorSize, minimumMutators.floorHeight, 1)
+                };
+            case Direction.East:
+                return new Door()
+                {
+                    position = new Vector3Int(section.position.x - 1, section.position.y, 
+                        section.position.z + section.size.z / 2 - minimumMutators.doorSize / 2),
+                    size = new Vector3Int(1, minimumMutators.floorHeight, minimumMutators.doorSize)
+                };
+            case Direction.West:
+                return new Door()
+                {
+                    position = new Vector3Int(section.position.x + section.size.x, section.position.y,
+                        section.position.z + section.size.z / 2 - minimumMutators.doorSize / 2),
+                    size = new Vector3Int(1, minimumMutators.floorHeight, minimumMutators.doorSize)
+                };
+            default:
+                return new Door();
+        }
+    }
+
+    private Direction ClockWise(Direction direction)
+    {
+        switch (direction)
+        {
+            case Direction.North:
+                return Direction.East;
+            case Direction.East:
+                return Direction.South;
+            case Direction.South:
+                return Direction.West;
+            case Direction.West:
+                return Direction.North;
+            default:
+                return direction;
+        }
+    }
+
+    private Direction CounterClockWise(Direction direction)
+    {
+        switch (direction)
+        {
+            case Direction.North:
+                return Direction.West;
+            case Direction.West:
+                return Direction.South;
+            case Direction.South:
+                return Direction.East;
+            case Direction.East:
+                return Direction.North;
+            default:
+                return direction;
+        }
     }
 
 }

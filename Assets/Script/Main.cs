@@ -18,16 +18,13 @@ public class Main : MonoBehaviour
         foreach (var section in dungeonGenerator.rooms)
         {
             mesher.AddGeometryToMesh(section.position, section.size, new Vector2(1,1), new Vector3(1,1,1));
-            //foreach (var door in section.doors)
-            //{ 
-            //    doors.Add(door);
-            //}
         }
 
-        //foreach (var door in doors)
-        //{
-        //    mesher.AddGeometryToMesh(door.position, door.size, new Vector2(1,1), new Vector3(1,1,1) );
-        //}
+        foreach (var section in dungeonGenerator.doors)
+        {
+            mesher.AddGeometryToMesh(section.position, section.size, new Vector2(1,1), new Vector3(1,1,1));
+        }
+            
         
         mesher.UpdateMesh();
     }
