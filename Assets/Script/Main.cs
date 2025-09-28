@@ -7,6 +7,7 @@ public class Main : MonoBehaviour
     Mesher mesher;
     [SerializeField] DungeonGenerator.MinimumMutators minimumMutators;
     [SerializeField] Vector3Int size;
+    [SerializeField] Material floorMaterial;
     
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -24,8 +25,8 @@ public class Main : MonoBehaviour
         {
             mesher.AddGeometryToMesh(section.position, section.size, new Vector2(1,1), new Vector3(1,1,1));
         }
-            
         
         mesher.UpdateMesh();
+        mesher.SetMaterial(floorMaterial);
     }
 }

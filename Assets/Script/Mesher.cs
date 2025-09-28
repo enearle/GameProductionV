@@ -84,4 +84,8 @@ public class Mesher : MonoBehaviour
         mesh = new Mesh();
     }
 
+    public void SetMaterial(Material material)
+    {
+        GetComponent<MeshRenderer>().material = material;
+    }
 }

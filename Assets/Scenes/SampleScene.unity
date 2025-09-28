@@ -272,7 +272,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CameraFlight
   movementSpeed: 10
   fastMovementSpeed: 20
-  rotationSpeed: 1
+  rotationSpeed: 0.2
   smoothness: 0.1
   playerInput: {fileID: 330585549}
 --- !u!114 &330585549
@@ -584,14 +584,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Main
   minimumMutators:
-    roomSize: 10
-    corridorSize: 5
-    doorSize: 3
+    roomSize: 20
+    corridorSize: 10
+    doorSize: 5
     floorHeight: 12
     maxFloorUsage: 0
     wallThickness: 1
     floorThickness: 1
-  size: {x: 300, y: 12, z: 300}
+  size: {x: 1000, y: 12, z: 1000}
+  floorMaterial: {fileID: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
