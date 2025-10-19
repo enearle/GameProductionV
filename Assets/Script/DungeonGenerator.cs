@@ -103,6 +103,7 @@ public class DungeonGenerator : MonoBehaviour
     public List<Section> rooms = new List<Section>();
     public List<Section> floors = new List<Section>(); // In case I want to retroactively make changes to the dungeon
     public List<Door> doors = new List<Door>();
+    public float deepRatio = 0.9f;
     
     public void GenerateDungeon(Vector3Int size, MinimumMutators minimumMutators)
     {
@@ -222,6 +223,11 @@ public class DungeonGenerator : MonoBehaviour
         }
     }
 
+    private Section SectionDivide(int width, int length, Direction roomDirection)
+    {
+        return null;
+    }
+
     private Section ThreeSectionDivide(Section section, int floor)
     { 
         SectionBounds parentBounds = new SectionBounds(section.position, section.size);
@@ -235,7 +241,7 @@ public class DungeonGenerator : MonoBehaviour
         
         if (section.roomDirection == Direction.North || section.roomDirection == Direction.South)
         {
-            isDeep = parentBounds.GetSize().z > parentBounds.GetSize().x;
+            isDeep = ((float)parentBounds.GetSize().z / parentBounds.GetSize().x) > deepRatio;
             bool isZPositive = section.roomDirection == Direction.North;
             // Either start at the bottom wall or choose somewhere a room's distance away
             int minZ, maxZ;
@@ -247,7 +253,7 @@ public class DungeonGenerator : MonoBehaviour
                 if (isDeep)
                 {
                     // Push the end of the corridor back to force subsections to be more square
-                    int squaringDepth = (1 - (parentBounds.GetSize().x / parentBounds.GetSize().z)) * parentBounds.GetSize().z;
+                    int squaringDepth = parentBounds.minZ + parentBounds.GetSize().z / 2;
                     maxZ = Mathf.Clamp(squaringDepth, parentBounds.minZ + minimumMutators.roomSize + wallThickness, 
                         parentBounds.maxZ - minimumMutators.roomSize);
                 }
@@ -264,7 +270,7 @@ public class DungeonGenerator : MonoBehaviour
                 if (isDeep)
                 {
                     // Push the end of the corridor back to force subsections to be more square
-                    int squaringDepth = (parentBounds.GetSize().x / parentBounds.GetSize().z) * parentBounds.GetSize().z;
+                    int squaringDepth = parentBounds.minZ + parentBounds.GetSize().z / 2;
                     minZ = Mathf.Clamp(squaringDepth, parentBounds.minZ + minimumMutators.roomSize, 
                         parentBounds.maxZ - minimumMutators.roomSize - wallThickness);
                 }
@@ -299,7 +305,8 @@ public class DungeonGenerator : MonoBehaviour
         }
         else if (section.roomDirection == Direction.West || section.roomDirection == Direction.East)
         {
-            isDeep = parentBounds.GetSize().x > parentBounds.GetSize().z;
+            isDeep = ((float)parentBounds.GetSize().x / parentBounds.GetSize().z) > deepRatio;
+            Debug.Log("parent bounds x>z: " + parentBounds.GetSize().x + " : " + parentBounds.GetSize().z + " isdeep: " + isDeep);
             bool isXPositive = section.roomDirection == Direction.East;
             // Either start at the left wall or choose somewhere a room's distance away
             int minX, maxX;
@@ -311,7 +318,7 @@ public class DungeonGenerator : MonoBehaviour
                 if (isDeep)
                 {
                     // Push the end of the corridor back to force subsections to be more square
-                    int squaringDepth = (1 - (parentBounds.GetSize().z / parentBounds.GetSize().x)) * parentBounds.GetSize().x;
+                    int squaringDepth = parentBounds.minX + parentBounds.GetSize().x / 2;
                     maxX = Mathf.Clamp(squaringDepth, parentBounds.minX + minimumMutators.roomSize + wallThickness, 
                         parentBounds.maxX - minimumMutators.roomSize);
                 }
@@ -327,7 +334,7 @@ public class DungeonGenerator : MonoBehaviour
                 if (isDeep)
                 {
                     // Push the end of the corridor back to force subsections to be more square
-                    int squaringDepth = (parentBounds.GetSize().z / parentBounds.GetSize().x) * parentBounds.GetSize().x;
+                    int squaringDepth = parentBounds.minX + parentBounds.GetSize().x / 2;
                     minX = Mathf.Clamp(squaringDepth, parentBounds.minX + minimumMutators.roomSize, 
                         parentBounds.maxX - minimumMutators.roomSize - wallThickness);
                 }

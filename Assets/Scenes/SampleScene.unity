@@ -584,9 +584,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Main
   minimumMutators:
-    roomSize: 20
-    corridorSize: 10
-    doorSize: 5
+    roomSize: 10
+    corridorSize: 6
+    doorSize: 4
     floorHeight: 12
     maxFloorUsage: 0
     wallThickness: 1
