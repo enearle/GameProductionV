@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using System.Collections.Generic;
 using Random = UnityEngine.Random;
@@ -23,6 +24,11 @@ public class DungeonGenerator : MonoBehaviour
         South,
         West,
         East
+    }
+    
+    static bool RoomDirectionVertical(Direction direction)
+    {
+        return direction == Direction.North || direction == Direction.South;
     }
 
     public struct Door
@@ -70,6 +76,34 @@ public class DungeonGenerator : MonoBehaviour
             return new Vector3Int(maxX - minX, height, maxZ - minZ);
         }
     }
+
+    public struct Space
+    {
+        public int width;
+        public int depth;
+
+        public Space(SectionBounds bounds, Direction direction)
+        {
+            if (RoomDirectionVertical(direction))
+            {
+                width = bounds.GetSize().x;
+                depth = bounds.GetSize().z;
+            }
+            else
+            {
+                width = bounds.GetSize().z;
+                depth = bounds.GetSize().x;
+            }
+        }
+
+        public SectionBounds GetBounds(Direction direction, Vector3Int position, int height)
+        {
+            if (RoomDirectionVertical(direction))
+                return new SectionBounds(position, new Vector3Int(width, height, depth));
+            else
+                return new SectionBounds(position, new Vector3Int(depth, height, width));
+        }
+    }
     
     public class Section
     {
@@ -98,7 +132,8 @@ public class DungeonGenerator : MonoBehaviour
         }
     }
 
-    public MinimumMutators minimumMutators;
+    private static UInt64 calls = 0;
+    public MinimumMutators minimums;
     int minimumSectionSize;
     public List<Section> rooms = new List<Section>();
     public List<Section> floors = new List<Section>(); // In case I want to retroactively make changes to the dungeon
@@ -107,7 +142,7 @@ public class DungeonGenerator : MonoBehaviour
     
     public void GenerateDungeon(Vector3Int size, MinimumMutators minimumMutators)
     {
-        this.minimumMutators = minimumMutators;
+        this.minimums = minimumMutators;
         minimumSectionSize = minimumMutators.roomSize * 2 + minimumMutators.corridorSize + minimumMutators.wallThickness * 2;
 
         for (int i = 0; i < size.y / minimumMutators.floorHeight; i++)
@@ -126,9 +161,9 @@ public class DungeonGenerator : MonoBehaviour
     {
         Section mainSection = new Section();
         mainSection.position = -floorSize / 2;
-        mainSection.position.y = floor * minimumMutators.floorHeight;
+        mainSection.position.y = floor * minimums.floorHeight;
         mainSection.size = floorSize;
-        mainSection.size.y -= minimumMutators.floorThickness;
+        mainSection.size.y -= minimums.floorThickness;
         mainSection.startFloor = floor;
         mainSection.endFloor = floor;
         mainSection.roomDirection = Direction.North;
@@ -138,51 +173,62 @@ public class DungeonGenerator : MonoBehaviour
 
     private Section SubdivideSection(Section section, int floor)
     {
-        if (section.CheckSectionCanBeDivide(minimumSectionSize))
+        calls++;
+        if (calls >= 1000)
+            Debug.Log("Calls: " + calls);
+        try
         {
-            return ThreeSectionDivide(section, floor);
+            if (section.CheckSectionCanBeDivide(minimumSectionSize))
+            {
+              return ThreeSectionDivide(section, floor);
+            }
+            else
+            {
+              // TODO add logic to expand into multiple floors
+              section.isRoom = true;
+              rooms.Add(section);
+              return section;
+            }  
         }
-        else
+        catch (Exception e)
         {
-            // TODO add logic to expand into multiple floors
-            section.isRoom = true;
-            rooms.Add(section);
+            Debug.Log(e + " Subdivide calls: " + calls);;
             return section;
         }
     }
     
     private Door CreateDoor(Section section)
     {
-        int wallThickness = minimumMutators.wallThickness;
+        int wallThickness = minimums.wallThickness;
         switch (section.roomDirection)
         {
             case Direction.South:
                 return new Door()
                 {
-                    position = new Vector3Int(section.position.x + section.size.x / 2 - minimumMutators.doorSize / 2, 
+                    position = new Vector3Int(section.position.x + section.size.x / 2 - minimums.doorSize / 2, 
                         section.position.y, section.position.z + section.size.z),
-                    size = new Vector3Int(minimumMutators.doorSize, minimumMutators.floorHeight, wallThickness)
+                    size = new Vector3Int(minimums.doorSize, minimums.floorHeight, wallThickness)
                 };
             case Direction.North:
                 return new Door()
                 {
-                    position = new Vector3Int(section.position.x + section.size.x / 2 - minimumMutators.doorSize / 2,
+                    position = new Vector3Int(section.position.x + section.size.x / 2 - minimums.doorSize / 2,
                         section.position.y, section.position.z - wallThickness),
-                    size = new Vector3Int(minimumMutators.doorSize, minimumMutators.floorHeight, wallThickness)
+                    size = new Vector3Int(minimums.doorSize, minimums.floorHeight, wallThickness)
                 };
             case Direction.East:
                 return new Door()
                 {
                     position = new Vector3Int(section.position.x - wallThickness, section.position.y, 
-                        section.position.z + section.size.z / 2 - minimumMutators.doorSize / 2),
-                    size = new Vector3Int(wallThickness, minimumMutators.floorHeight, minimumMutators.doorSize)
+                        section.position.z + section.size.z / 2 - minimums.doorSize / 2),
+                    size = new Vector3Int(wallThickness, minimums.floorHeight, minimums.doorSize)
                 };
             case Direction.West:
                 return new Door()
                 {
                     position = new Vector3Int(section.position.x + section.size.x, section.position.y,
-                        section.position.z + section.size.z / 2 - minimumMutators.doorSize / 2),
-                    size = new Vector3Int(wallThickness, minimumMutators.floorHeight, minimumMutators.doorSize)
+                        section.position.z + section.size.z / 2 - minimums.doorSize / 2),
+                    size = new Vector3Int(wallThickness, minimums.floorHeight, minimums.doorSize)
                 };
             default:
                 return new Door();
@@ -223,11 +269,108 @@ public class DungeonGenerator : MonoBehaviour
         }
     }
 
-    private Section SectionDivide(int width, int length, Direction roomDirection)
+    private Section BroomDivide(Section section)
     {
-        return null;
+        Section corridorSection = section;
+        corridorSection.parent = section;
+        Section broomSection = section;
+        broomSection.parent = section;
+        
+        SectionBounds parentBounds = new SectionBounds(section.position, section.size);
+        Space space = new Space(parentBounds, section.roomDirection);
+        int corridorAndWall = minimums.corridorSize + minimums.wallThickness;
+        int broomAndWall = space.depth - minimums.corridorSize;
+        
+        bool isVertical = RoomDirectionVertical(section.roomDirection);
+        if (isVertical)
+        {
+            corridorSection.size -= new Vector3Int(0, 0, broomAndWall);
+            broomSection.size -= new Vector3Int(0, 0, corridorAndWall);
+            if (section.roomDirection == Direction.North)
+            {
+                broomSection.position += new Vector3Int(0, 0, corridorAndWall);
+            }
+            else
+            {
+                corridorSection.position += new Vector3Int(0, 0, broomAndWall);
+            }
+        }
+        else
+        {
+            corridorSection.size -= new Vector3Int(broomAndWall, 0, 0);
+            broomSection.size -= new Vector3Int(corridorAndWall, 0, 0);
+            if (section.roomDirection == Direction.East)
+            {
+                broomSection.position += new Vector3Int(corridorAndWall, 0, 0);
+            }
+            else
+            {
+                corridorSection.position += new Vector3Int(broomAndWall, 0, 0);
+            }
+        }
+        
+        broomSection = BufferDivide(broomSection);
+        corridorSection.isCorridor = true;
+        section.children.Add(corridorSection);
+        section.children.AddRange(broomSection.children);
+        return section;
+    }
+ 
+    private Section BufferDivide(Section section)
+    {
+        SectionBounds parentBounds = new SectionBounds(section.position, section.size);
+        Space space = new Space(parentBounds, section.roomDirection);
+        int subDivisions = WideSubDiv(space);
+        List<SectionBounds> subSections = new List<SectionBounds>();
+        
+        int subDivSize = space.width / subDivisions;
+        
+        bool isVertical = RoomDirectionVertical(section.roomDirection);
+        for (int i = 0; i < subDivisions - 1; i++)
+        {
+            Vector3Int posOffset = new Vector3Int(i * (subDivSize + minimums.corridorSize), 0, 0);
+            Vector3Int sizeOffset = new Vector3Int(subDivSize, parentBounds.height, space.depth);
+            Vector3Int position = parentBounds.GetPosition() + (isVertical ? ZYXSwizzle(posOffset) : posOffset);
+            Vector3Int size = position + (isVertical ? ZYXSwizzle(sizeOffset) : sizeOffset);
+            SectionBounds bounds = new SectionBounds(position, size);
+            subSections.Add(bounds);
+        }
+
+        int spaceUsed = (subDivisions - 1) * (subDivSize + minimums.corridorSize);
+        int spaceLeft = space.width - spaceUsed;
+        Vector3Int lastDivPosOffset = new Vector3Int(spaceUsed, 0, 0);
+        Vector3Int lastDivPosition = parentBounds.GetPosition() + (isVertical ? ZYXSwizzle(lastDivPosOffset) : lastDivPosOffset);
+        Vector3Int lastDivSizeOffset = new Vector3Int(spaceLeft, parentBounds.height, space.depth);
+        Vector3Int lastDivSize = isVertical ? ZYXSwizzle(lastDivSizeOffset) : lastDivSizeOffset;
+        SectionBounds lastDivBounds = new SectionBounds(lastDivPosition, lastDivSize);
+        subSections.Add(lastDivBounds);
+
+        foreach (SectionBounds bounds in subSections)
+        {
+            Section subSection = section;
+            subSection.parent = section;
+            subSection.position = bounds.GetPosition();
+            subSection.size = bounds.GetSize();
+            section.children.Add(subSection);
+        }
+        
+        return section;
     }
 
+    private int WideSubDiv(Space space, float entropy = 0)
+    {
+        int subDivByDepth = space.width / space.depth + minimums.wallThickness;
+        int subDivByMin = space.width / minimums.roomSize + minimums.wallThickness;
+        int randomSubDiv = Random.Range(subDivByMin, subDivByDepth);
+        int entropicSubDiv = Mathf.RoundToInt(Mathf.Lerp(subDivByDepth, randomSubDiv, entropy));
+        return entropicSubDiv;
+    }
+
+    static private Vector3Int ZYXSwizzle(Vector3Int vector)
+    {
+        return new Vector3Int(vector.z, vector.y, vector.x);
+    }
+    
     private Section ThreeSectionDivide(Section section, int floor)
     { 
         SectionBounds parentBounds = new SectionBounds(section.position, section.size);
@@ -236,10 +379,10 @@ public class DungeonGenerator : MonoBehaviour
         SectionBounds leftBounds = new SectionBounds(parentBounds.YPos, parentBounds.height);
         SectionBounds endBounds = new SectionBounds(parentBounds.YPos, parentBounds.height);
         
-        int wallThickness = minimumMutators.wallThickness;
+        int wallThickness = minimums.wallThickness;
         bool isDeep = false;
         
-        if (section.roomDirection == Direction.North || section.roomDirection == Direction.South)
+        if (RoomDirectionVertical(section.roomDirection))
         {
             isDeep = ((float)parentBounds.GetSize().z / parentBounds.GetSize().x) > deepRatio;
             bool isZPositive = section.roomDirection == Direction.North;
@@ -254,8 +397,8 @@ public class DungeonGenerator : MonoBehaviour
                 {
                     // Push the end of the corridor back to force subsections to be more square
                     int squaringDepth = parentBounds.minZ + parentBounds.GetSize().z / 2;
-                    maxZ = Mathf.Clamp(squaringDepth, parentBounds.minZ + minimumMutators.roomSize + wallThickness, 
-                        parentBounds.maxZ - minimumMutators.roomSize);
+                    maxZ = Mathf.Clamp(squaringDepth, parentBounds.minZ + minimums.roomSize + wallThickness, 
+                        parentBounds.maxZ - minimums.roomSize);
                 }
                 else
                 {
@@ -271,8 +414,8 @@ public class DungeonGenerator : MonoBehaviour
                 {
                     // Push the end of the corridor back to force subsections to be more square
                     int squaringDepth = parentBounds.minZ + parentBounds.GetSize().z / 2;
-                    minZ = Mathf.Clamp(squaringDepth, parentBounds.minZ + minimumMutators.roomSize, 
-                        parentBounds.maxZ - minimumMutators.roomSize - wallThickness);
+                    minZ = Mathf.Clamp(squaringDepth, parentBounds.minZ + minimums.roomSize, 
+                        parentBounds.maxZ - minimums.roomSize - wallThickness);
                 }
                 else
                 {
@@ -282,8 +425,8 @@ public class DungeonGenerator : MonoBehaviour
 
             corridorBounds.minZ = minZ;
             corridorBounds.maxZ = maxZ;
-            corridorBounds.minX = (parentBounds.minX + parentBounds.maxX) / 2 - minimumMutators.corridorSize / 2;  
-            corridorBounds.maxX = corridorBounds.minX + minimumMutators.corridorSize;
+            corridorBounds.minX = (parentBounds.minX + parentBounds.maxX) / 2 - minimums.corridorSize / 2;  
+            corridorBounds.maxX = corridorBounds.minX + minimums.corridorSize;
             
             rightBounds.minZ = minZ;
             rightBounds.maxZ = maxZ;
@@ -303,10 +446,9 @@ public class DungeonGenerator : MonoBehaviour
                 endBounds.maxX = parentBounds.maxX;
             }            
         }
-        else if (section.roomDirection == Direction.West || section.roomDirection == Direction.East)
+        else if (!RoomDirectionVertical(section.roomDirection))
         {
             isDeep = ((float)parentBounds.GetSize().x / parentBounds.GetSize().z) > deepRatio;
-            Debug.Log("parent bounds x>z: " + parentBounds.GetSize().x + " : " + parentBounds.GetSize().z + " isdeep: " + isDeep);
             bool isXPositive = section.roomDirection == Direction.East;
             // Either start at the left wall or choose somewhere a room's distance away
             int minX, maxX;
@@ -319,8 +461,8 @@ public class DungeonGenerator : MonoBehaviour
                 {
                     // Push the end of the corridor back to force subsections to be more square
                     int squaringDepth = parentBounds.minX + parentBounds.GetSize().x / 2;
-                    maxX = Mathf.Clamp(squaringDepth, parentBounds.minX + minimumMutators.roomSize + wallThickness, 
-                        parentBounds.maxX - minimumMutators.roomSize);
+                    maxX = Mathf.Clamp(squaringDepth, parentBounds.minX + minimums.roomSize + wallThickness, 
+                        parentBounds.maxX - minimums.roomSize);
                 }
                 else
                 {
@@ -335,8 +477,8 @@ public class DungeonGenerator : MonoBehaviour
                 {
                     // Push the end of the corridor back to force subsections to be more square
                     int squaringDepth = parentBounds.minX + parentBounds.GetSize().x / 2;
-                    minX = Mathf.Clamp(squaringDepth, parentBounds.minX + minimumMutators.roomSize, 
-                        parentBounds.maxX - minimumMutators.roomSize - wallThickness);
+                    minX = Mathf.Clamp(squaringDepth, parentBounds.minX + minimums.roomSize, 
+                        parentBounds.maxX - minimums.roomSize - wallThickness);
                 }
                 else
                 {
@@ -346,8 +488,8 @@ public class DungeonGenerator : MonoBehaviour
 
             corridorBounds.minX = minX;
             corridorBounds.maxX = maxX;
-            corridorBounds.minZ = (parentBounds.minZ + parentBounds.maxZ) / 2 - minimumMutators.corridorSize / 2; 
-            corridorBounds.maxZ = corridorBounds.minZ + minimumMutators.corridorSize;
+            corridorBounds.minZ = (parentBounds.minZ + parentBounds.maxZ) / 2 - minimums.corridorSize / 2; 
+            corridorBounds.maxZ = corridorBounds.minZ + minimums.corridorSize;
 
             rightBounds.minX = minX;
             rightBounds.maxX = maxX;
@@ -394,7 +536,15 @@ public class DungeonGenerator : MonoBehaviour
             rightSection.roomDirection = ClockWise(section.roomDirection);
         else
             rightSection.roomDirection = CounterClockWise(section.roomDirection);
-        section.children.Add(rightSection);
+        
+        Space rightSpace = new Space(rightBounds, rightSection.roomDirection);
+        if(rightSpace.width > 2 * rightSpace.depth + minimums.wallThickness && rightSpace.depth > minimums.roomSize)
+        {
+            rightSection = BufferDivide(rightSection);
+            section.children.AddRange(rightSection.children);   
+        }
+        else
+            section.children.Add(rightSection);
         
         Section leftSection = new Section();
         leftSection.parent = section;
@@ -406,7 +556,15 @@ public class DungeonGenerator : MonoBehaviour
             leftSection.roomDirection = CounterClockWise(section.roomDirection);
         else
             leftSection.roomDirection = ClockWise(section.roomDirection);
-        section.children.Add(leftSection);
+        
+        Space leftSpace = new Space(leftBounds, leftSection.roomDirection);
+        if(leftSpace.width > 2 * leftSpace.depth + minimums.wallThickness && leftSpace.depth > minimums.roomSize)
+        {
+            leftSection = BufferDivide(leftSection);
+            section.children.AddRange(leftSection.children);   
+        }
+        else
+            section.children.Add(leftSection);
         
         if(isDeep)
         {
@@ -417,7 +575,16 @@ public class DungeonGenerator : MonoBehaviour
             endSection.startFloor = floor;
             endSection.endFloor = floor;
             endSection.roomDirection = section.roomDirection;
-            section.children.Add(endSection);
+            
+            Space endSpace = new Space(endBounds, endSection.roomDirection);
+            if(endSpace.width > 2 * endSpace.depth + minimums.wallThickness && endSpace.depth > 
+               minimums.corridorSize + minimums.wallThickness + minimums.roomSize)
+            {
+                endSection = BroomDivide(endSection);
+                section.children.AddRange(endSection.children);
+            }
+            else
+                section.children.Add(endSection);
         }
 
         for (int i = 0; i < section.children.Count; i++)
@@ -426,5 +593,5 @@ public class DungeonGenerator : MonoBehaviour
         
         return section;
     }
-
+    
 }
