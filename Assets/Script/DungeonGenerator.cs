@@ -280,7 +280,7 @@ public class DungeonGenerator : MonoBehaviour
         Space space = new Space(parentBounds, section.roomDirection);
         int corridorAndWall = minimums.corridorSize + minimums.wallThickness;
         int broomAndWall = space.depth - minimums.corridorSize;
-        
+        // TODO Fix this
         bool isVertical = RoomDirectionVertical(section.roomDirection);
         if (isVertical)
         {
@@ -318,6 +318,7 @@ public class DungeonGenerator : MonoBehaviour
  
     private Section BufferDivide(Section section)
     {
+        // TODO Add checks to dectect problems here
         SectionBounds parentBounds = new SectionBounds(section.position, section.size);
         Space space = new Space(parentBounds, section.roomDirection);
         int subDivisions = WideSubDiv(space);
@@ -348,7 +349,6 @@ public class DungeonGenerator : MonoBehaviour
         foreach (SectionBounds bounds in subSections)
         {
             Section subSection = section;
-            subSection.parent = section;
             subSection.position = bounds.GetPosition();
             subSection.size = bounds.GetSize();
             section.children.Add(subSection);
