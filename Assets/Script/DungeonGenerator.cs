@@ -116,6 +116,31 @@ public class DungeonGenerator : MonoBehaviour
         public Direction roomDirection;
         public bool isRoom;
         public bool isCorridor;
+
+        public Section()
+        {
+            this.position = Vector3Int.zero;
+            this.size = Vector3Int.zero;
+            this.startFloor = 0;
+            this.endFloor = 0;
+            this.roomDirection = Direction.North;
+            this.isRoom = false;
+            this.isCorridor = false;
+            this.parent = null;
+        }
+        public Section(Section other, bool copyParent = true, bool copyChildren = false)
+        {
+            this.position = other.position;
+            this.size = other.size;
+            this.startFloor = other.startFloor;
+            this.endFloor = other.endFloor;
+            this.roomDirection = other.roomDirection;
+            this.isRoom = other.isRoom;
+            this.isCorridor = other.isCorridor;
+            this.children = copyChildren ? new List<Section>(other.children) : new List<Section>();
+            this.parent = copyParent ? other.parent : null;
+        }
+
         
         public bool IntersectsFloor(int floor)
         {
@@ -271,9 +296,9 @@ public class DungeonGenerator : MonoBehaviour
 
     private Section BroomDivide(Section section)
     {
-        Section corridorSection = section;
+        Section corridorSection = new Section(section);
         corridorSection.parent = section;
-        Section broomSection = section;
+        Section broomSection = new Section(section);
         broomSection.parent = section;
         
         SectionBounds parentBounds = new SectionBounds(section.position, section.size);
@@ -348,7 +373,7 @@ public class DungeonGenerator : MonoBehaviour
 
         foreach (SectionBounds bounds in subSections)
         {
-            Section subSection = section;
+            Section subSection = new Section(section);
             subSection.position = bounds.GetPosition();
             subSection.size = bounds.GetSize();
             section.children.Add(subSection);
@@ -359,8 +384,8 @@ public class DungeonGenerator : MonoBehaviour
 
     private int WideSubDiv(Space space, float entropy = 0)
     {
-        int subDivByDepth = space.width / space.depth + minimums.wallThickness;
-        int subDivByMin = space.width / minimums.roomSize + minimums.wallThickness;
+        int subDivByDepth = space.width / (space.depth + minimums.wallThickness);
+        int subDivByMin = space.width / (minimums.roomSize + minimums.wallThickness);
         int randomSubDiv = Random.Range(subDivByMin, subDivByDepth);
         int entropicSubDiv = Mathf.RoundToInt(Mathf.Lerp(subDivByDepth, randomSubDiv, entropy));
         return entropicSubDiv;
