@@ -591,8 +591,10 @@ MonoBehaviour:
     maxFloorUsage: 0
     wallThickness: 1
     floorThickness: 1
+    entropyThreshold: 0.5
   size: {x: 1000, y: 12, z: 1000}
   floorMaterial: {fileID: 0}
+  seed: 0
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

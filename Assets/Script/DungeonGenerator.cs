@@ -16,6 +16,7 @@ public class DungeonGenerator : MonoBehaviour
         public float maxFloorUsage;
         public int wallThickness;
         public int floorThickness;
+        public float entropyThreshold;
     }
     
     public enum Direction
@@ -116,6 +117,7 @@ public class DungeonGenerator : MonoBehaviour
         public Direction roomDirection;
         public bool isRoom;
         public bool isCorridor;
+        public int corridorOffset;
 
         public Section()
         {
@@ -128,7 +130,7 @@ public class DungeonGenerator : MonoBehaviour
             this.isCorridor = false;
             this.parent = null;
         }
-        public Section(Section other, bool copyParent = true, bool copyChildren = false)
+        public Section(Section other, bool copyCorridorOffset = false, bool copyParent = true, bool copyChildren = false)
         {
             this.position = other.position;
             this.size = other.size;
@@ -139,6 +141,7 @@ public class DungeonGenerator : MonoBehaviour
             this.isCorridor = other.isCorridor;
             this.children = copyChildren ? new List<Section>(other.children) : new List<Section>();
             this.parent = copyParent ? other.parent : null;
+            this.corridorOffset = copyCorridorOffset ? other.corridorOffset : 0;
         }
 
         
@@ -164,21 +167,32 @@ public class DungeonGenerator : MonoBehaviour
     public List<Section> floors = new List<Section>(); // In case I want to retroactively make changes to the dungeon
     public List<Door> doors = new List<Door>();
     public float deepRatio = 0.9f;
+    private int zeroPoint;
+    private int maxPoint;
     
-    public void GenerateDungeon(Vector3Int size, MinimumMutators minimumMutators)
+    public void GenerateDungeon(Vector3Int size, MinimumMutators minimums, int seed)
     {
-        this.minimums = minimumMutators;
-        minimumSectionSize = minimumMutators.roomSize * 2 + minimumMutators.corridorSize + minimumMutators.wallThickness * 2;
-
-        for (int i = 0; i < size.y / minimumMutators.floorHeight; i++)
+        SetSeed(seed);
+        
+        this.minimums = minimums;
+        minimumSectionSize = minimums.roomSize * 2 + minimums.corridorSize + minimums.wallThickness * 2;
+        zeroPoint = minimums.roomSize * 2 + minimums.wallThickness;
+        maxPoint = Mathf.RoundToInt(Mathf.Lerp(zeroPoint, Math.Min(size.x, size.z), minimums.entropyThreshold));
+        
+        if (maxPoint < zeroPoint)
+            Debug.LogError("Dungeon size is too small for minimum entropy");
+        
+        for (int i = 0; i < size.y / minimums.floorHeight; i++)
         {
-            Vector3Int floorSize = new Vector3Int(size.x, minimumMutators.floorHeight, size.z);
+            Vector3Int floorSize = new Vector3Int(size.x, minimums.floorHeight, size.z);
             GenerateFloor(i, floorSize);
         }
 
-        foreach (Section section in rooms)
+        for (int i = 0; i < rooms.Count; i++)
         {
-            doors.Add(CreateDoor(section));
+            if (i == 0)
+                Debug.Log("Room 1: " + rooms[i].corridorOffset + " " + rooms[i].isCorridor);
+            doors.Add(CreateDoor(rooms[i]));
         }
     }
 
@@ -204,12 +218,15 @@ public class DungeonGenerator : MonoBehaviour
             Debug.Log("Calls: " + calls);
             return null;
         }
-
+        
+        float entropy = CalculateSectionEntropy(section, zeroPoint, maxPoint);
+        bool finishEarly = LowEntropyRoll(entropy);
+        bool canDivide = section.CheckSectionCanBeDivide(minimumSectionSize);
         try
         {
-            if (section.CheckSectionCanBeDivide(minimumSectionSize))
+            if (!finishEarly && canDivide)
             {
-              return ThreeSectionDivide(section, floor);
+              return ThreeSectionDivide(section, floor, entropy);
             }
             else
             {
@@ -229,19 +246,25 @@ public class DungeonGenerator : MonoBehaviour
     private Door CreateDoor(Section section)
     {
         int wallThickness = minimums.wallThickness;
+        int doorOffset = CorridorOffsetToDoorOffset(section.corridorOffset);
+        
         switch (section.roomDirection)
         {
             case Direction.South:
                 return new Door()
                 {
-                    position = new Vector3Int(section.position.x + section.size.x / 2 - minimums.doorSize / 2, 
-                        section.position.y, section.position.z + section.size.z),
+                    position =  new Vector3Int(section.corridorOffset == 0 ? 
+                            section.position.x + section.size.x / 2 - minimums.doorSize / 2 : 
+                            section.position.x + doorOffset, 
+                            section.position.y, section.position.z + section.size.z),
                     size = new Vector3Int(minimums.doorSize, minimums.floorHeight, wallThickness)
                 };
             case Direction.North:
                 return new Door()
                 {
-                    position = new Vector3Int(section.position.x + section.size.x / 2 - minimums.doorSize / 2,
+                    position = new Vector3Int(section.corridorOffset == 0 ?
+                        section.position.x + section.size.x / 2 - minimums.doorSize / 2 :
+                        section.position.x + doorOffset,
                         section.position.y, section.position.z - wallThickness),
                     size = new Vector3Int(minimums.doorSize, minimums.floorHeight, wallThickness)
                 };
@@ -249,14 +272,16 @@ public class DungeonGenerator : MonoBehaviour
                 return new Door()
                 {
                     position = new Vector3Int(section.position.x - wallThickness, section.position.y, 
-                        section.position.z + section.size.z / 2 - minimums.doorSize / 2),
+                        section.corridorOffset == 0 ? section.position.z + section.size.z / 2 - minimums.doorSize / 2 :
+                            section.position.z + doorOffset),
                     size = new Vector3Int(wallThickness, minimums.floorHeight, minimums.doorSize)
                 };
             case Direction.West:
                 return new Door()
                 {
                     position = new Vector3Int(section.position.x + section.size.x, section.position.y,
-                        section.position.z + section.size.z / 2 - minimums.doorSize / 2),
+                        section.corridorOffset == 0 ? section.position.z + section.size.z / 2 - minimums.doorSize / 2 :
+                            section.position.z + doorOffset),
                     size = new Vector3Int(wallThickness, minimums.floorHeight, minimums.doorSize)
                 };
             default:
@@ -298,9 +323,9 @@ public class DungeonGenerator : MonoBehaviour
         }
     }
 
-    private Section BroomDivide(Section section)
+    private Section BroomDivide(Section section, float entropy = 0)
     {
-        Section corridorSection = new Section(section);
+        Section corridorSection = new Section(section, true);
         corridorSection.parent = section;
         Section broomSection = new Section(section);
         broomSection.parent = section;
@@ -342,16 +367,16 @@ public class DungeonGenerator : MonoBehaviour
         section.children.Add(corridorSection);
         rooms.Add(corridorSection);
         //section.children.Add(broomSection);
-        broomSection = BufferDivide(broomSection);
+        broomSection = BufferDivide(broomSection, entropy);
         section.children.AddRange(broomSection.children);
         return section;
     }
  
-    private Section BufferDivide(Section section)
+    private Section BufferDivide(Section section, float entropy = 0)
     {
         SectionBounds parentBounds = new SectionBounds(section.position, section.size);
         Space space = new Space(parentBounds, section.roomDirection);
-        int subDivisions = WideSubDiv(space);
+        int subDivisions = WideSubDiv(space, entropy);
         List<SectionBounds> subSections = new List<SectionBounds>();
         
         int subDivSize = space.width / subDivisions;
@@ -392,7 +417,7 @@ public class DungeonGenerator : MonoBehaviour
         int subDivByDepth = space.width / (space.depth + minimums.wallThickness);
         int subDivByMin = space.width / (minimums.roomSize + minimums.wallThickness);
         int randomSubDiv = Random.Range(subDivByMin, subDivByDepth);
-        int entropicSubDiv = Mathf.RoundToInt(Mathf.Lerp(subDivByDepth, randomSubDiv, entropy));
+        int entropicSubDiv = Mathf.FloorToInt(Mathf.Lerp(subDivByDepth, randomSubDiv, entropy));
         return entropicSubDiv;
     }
 
@@ -401,7 +426,7 @@ public class DungeonGenerator : MonoBehaviour
         return new Vector3Int(vector.z, vector.y, vector.x);
     }
     
-    private Section ThreeSectionDivide(Section section, int floor)
+    private Section ThreeSectionDivide(Section section, int floor, float entropy)
     { 
         SectionBounds parentBounds = new SectionBounds(section.position, section.size);
         SectionBounds corridorBounds = new SectionBounds(parentBounds.YPos, parentBounds.height);
@@ -412,13 +437,15 @@ public class DungeonGenerator : MonoBehaviour
         int wallThickness = minimums.wallThickness;
         bool isDeep = false;
         
+        float depth = Random.Range(0.35f, 0.65f);
+        depth = Mathf.Lerp(0.5f, depth, entropy);
+        int corridorOffset;
         if (RoomDirectionVertical(section.roomDirection))
         {
             isDeep = ((float)parentBounds.GetSize().z / parentBounds.GetSize().x) > deepRatio;
             bool isZPositive = section.roomDirection == Direction.North;
             // Either start at the bottom wall or choose somewhere a room's distance away
             int minZ, maxZ;
-            
             if (isZPositive)
             {
                 // Room extends from bottom boundary
@@ -426,7 +453,7 @@ public class DungeonGenerator : MonoBehaviour
                 if (isDeep)
                 {
                     // Push the end of the corridor back to force subsections to be more square
-                    int squaringDepth = parentBounds.minZ + parentBounds.GetSize().z / 2;
+                    int squaringDepth = parentBounds.minZ + Mathf.RoundToInt(parentBounds.GetSize().z * depth);
                     maxZ = Mathf.Clamp(squaringDepth, parentBounds.minZ + minimums.roomSize + wallThickness, 
                         parentBounds.maxZ - minimums.roomSize);
                 }
@@ -443,7 +470,7 @@ public class DungeonGenerator : MonoBehaviour
                 if (isDeep)
                 {
                     // Push the end of the corridor back to force subsections to be more square
-                    int squaringDepth = parentBounds.minZ + parentBounds.GetSize().z / 2;
+                    int squaringDepth = parentBounds.minZ + Mathf.RoundToInt(parentBounds.GetSize().z * depth);
                     minZ = Mathf.Clamp(squaringDepth, parentBounds.minZ + minimums.roomSize, 
                         parentBounds.maxZ - minimums.roomSize - wallThickness);
                 }
@@ -453,9 +480,13 @@ public class DungeonGenerator : MonoBehaviour
                 }
             }
 
+            corridorOffset = section.corridorOffset != 0 ? 
+                section.corridorOffset : PlaceCorridorHorizontal(parentBounds.GetSize().x, entropy);
+
             corridorBounds.minZ = minZ;
             corridorBounds.maxZ = maxZ;
             corridorBounds.minX = (parentBounds.minX + parentBounds.maxX) / 2 - minimums.corridorSize / 2;  
+            corridorBounds.minX = parentBounds.minX + corridorOffset;  
             corridorBounds.maxX = corridorBounds.minX + minimums.corridorSize;
             
             rightBounds.minZ = minZ;
@@ -516,9 +547,12 @@ public class DungeonGenerator : MonoBehaviour
                 }
             }
 
+            corridorOffset = section.corridorOffset != 0 ? 
+                section.corridorOffset : PlaceCorridorHorizontal(parentBounds.GetSize().z, entropy);
+
             corridorBounds.minX = minX;
             corridorBounds.maxX = maxX;
-            corridorBounds.minZ = (parentBounds.minZ + parentBounds.maxZ) / 2 - minimums.corridorSize / 2; 
+            corridorBounds.minZ = parentBounds.minZ + corridorOffset;
             corridorBounds.maxZ = corridorBounds.minZ + minimums.corridorSize;
 
             rightBounds.minX = minX;
@@ -605,6 +639,7 @@ public class DungeonGenerator : MonoBehaviour
             endSection.startFloor = floor;
             endSection.endFloor = floor;
             endSection.roomDirection = section.roomDirection;
+            endSection.corridorOffset = corridorOffset;
             
             Space endSpace = new Space(endBounds, endSection.roomDirection);
             if(endSpace.width > 2 * endSpace.depth + minimums.wallThickness && endSpace.depth > 
@@ -624,4 +659,58 @@ public class DungeonGenerator : MonoBehaviour
         return section;
     }
     
+    private void SetSeed(int seed)
+    {
+        if (seed == 0)
+        {
+            seed = System.DateTime.Now.Millisecond;
+            Debug.Log(seed);
+        }
+        Random.InitState(seed);
+    }
+
+    private float CalculateSectionEntropy(Section section, int zeroPoint, int maxPoint)
+    {
+        if (maxPoint < zeroPoint)
+            return 0;
+        
+        float sectionXEntropy = (float)(section.size.x - zeroPoint) / (maxPoint - zeroPoint);
+        float sectionZEntropy = (float)(section.size.z - zeroPoint) / (maxPoint - zeroPoint);
+        sectionXEntropy = Mathf.Clamp(sectionXEntropy, 0f, 1f);
+        sectionZEntropy = Mathf.Clamp(sectionZEntropy, 0f, 1f);
+        return Mathf.Min(sectionXEntropy, sectionZEntropy);
+    }
+    
+    private int PlaceCorridorHorizontal(int width, float entropy)
+    {
+        int min = minimums.roomSize + minimums.wallThickness;
+        int max = width - minimums.roomSize - minimums.wallThickness - minimums.corridorSize;
+        int randPos = Random.Range(min, max);
+        int setPos = width / 2 - minimums.corridorSize / 2;
+        
+        return Mathf.RoundToInt(Mathf.Lerp(setPos, randPos, entropy));
+    }
+    
+    private int DoorOffsetToCorridorOffset(int doorOffset)
+    {
+        int difference = (minimums.corridorSize - minimums.doorSize) / 2;
+        return doorOffset - difference;
+    }
+
+    private int CorridorOffsetToDoorOffset(int corridorOffset)
+    {
+        int difference = (minimums.corridorSize - minimums.doorSize) / 2;
+        return corridorOffset + difference;
+    }
+
+    private bool LowEntropyRoll(float entropy)
+    {
+        if (entropy < 0.05f)
+        {
+            float chance = 1 - entropy * 20;
+            return Random.Range(0f, 1f) < chance;
+        }
+        return false;
+    }
+
 }
