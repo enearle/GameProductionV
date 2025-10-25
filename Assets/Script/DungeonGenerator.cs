@@ -206,11 +206,11 @@ public class DungeonGenerator : MonoBehaviour
         mainSection.startFloor = floor;
         mainSection.endFloor = floor;
         mainSection.roomDirection = Direction.North;
-        mainSection = SubdivideSection(mainSection, floor);
+        mainSection = SubdivideSection(mainSection);
         floors.Add(mainSection);
     }
 
-    private Section SubdivideSection(Section section, int floor)
+    private Section SubdivideSection(Section section)
     {
         calls++;
         if (calls >= 5000)
@@ -226,7 +226,7 @@ public class DungeonGenerator : MonoBehaviour
         {
             if (!finishEarly && canDivide)
             {
-              return ThreeSectionDivide(section, floor, entropy);
+              return ThreeSectionDivide(section, entropy);
             }
             else
             {
@@ -426,7 +426,7 @@ public class DungeonGenerator : MonoBehaviour
         return new Vector3Int(vector.z, vector.y, vector.x);
     }
     
-    private Section ThreeSectionDivide(Section section, int floor, float entropy)
+    private Section ThreeSectionDivide(Section section, float entropy)
     { 
         SectionBounds parentBounds = new SectionBounds(section.position, section.size);
         SectionBounds corridorBounds = new SectionBounds(parentBounds.YPos, parentBounds.height);
@@ -583,8 +583,8 @@ public class DungeonGenerator : MonoBehaviour
         corridorSection.parent = section;
         corridorSection.position = corridorBounds.GetPosition();
         corridorSection.size = corridorBounds.GetSize();
-        corridorSection.startFloor = floor;
-        corridorSection.endFloor = floor;
+        corridorSection.startFloor = section.startFloor;
+        corridorSection.endFloor = section.startFloor;
         corridorSection.roomDirection = section.roomDirection;
         corridorSection.isCorridor = true;
         section.children.Add(corridorSection);
@@ -594,8 +594,8 @@ public class DungeonGenerator : MonoBehaviour
         rightSection.parent = section;
         rightSection.position = rightBounds.GetPosition();
         rightSection.size = rightBounds.GetSize();
-        rightSection.startFloor = floor;
-        rightSection.endFloor = floor;
+        rightSection.startFloor = section.startFloor;
+        rightSection.endFloor = section.startFloor;
         if (section.roomDirection == Direction.North || section.roomDirection == Direction.South)
             rightSection.roomDirection = ClockWise(section.roomDirection);
         else
@@ -614,8 +614,8 @@ public class DungeonGenerator : MonoBehaviour
         leftSection.parent = section;
         leftSection.position = leftBounds.GetPosition();
         leftSection.size = leftBounds.GetSize();
-        leftSection.startFloor = floor;
-        leftSection.endFloor = floor;
+        leftSection.startFloor = section.startFloor;
+        leftSection.endFloor = section.startFloor;
         if (section.roomDirection == Direction.North || section.roomDirection == Direction.South)
             leftSection.roomDirection = CounterClockWise(section.roomDirection);
         else
@@ -636,8 +636,8 @@ public class DungeonGenerator : MonoBehaviour
             endSection.parent = section;
             endSection.position = endBounds.GetPosition();
             endSection.size = endBounds.GetSize();
-            endSection.startFloor = floor;
-            endSection.endFloor = floor;
+            endSection.startFloor = section.startFloor;
+            endSection.endFloor = section.startFloor;
             endSection.roomDirection = section.roomDirection;
             endSection.corridorOffset = corridorOffset;
             
@@ -654,7 +654,16 @@ public class DungeonGenerator : MonoBehaviour
 
         for (int i = 0; i < section.children.Count; i++)
             if(!section.children[i].isCorridor)
-                section.children[i] = SubdivideSection(section.children[i], floor);
+                section.children[i] = SubdivideSection(section.children[i]);
+        
+        return section;
+    }
+
+    private Section CrossMacroDivide(Section section)
+    {
+        SectionBounds parentBounds = new SectionBounds(section.position, section.size);
+        
+        
         
         return section;
     }
