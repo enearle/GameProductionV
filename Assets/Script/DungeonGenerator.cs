@@ -361,8 +361,8 @@ public class DungeonGenerator : MonoBehaviour
         {
             Vector3Int posOffset = new Vector3Int(i * (subDivSize + minimums.wallThickness), 0, 0);
             Vector3Int sizeOffset = new Vector3Int(subDivSize, parentBounds.height, space.depth);
-            Vector3Int position = parentBounds.GetPosition() + (isVertical ? ZYXSwizzle(posOffset) : posOffset);
-            Vector3Int size = isVertical ? ZYXSwizzle(sizeOffset) : sizeOffset;
+            Vector3Int position = parentBounds.GetPosition() + (isVertical ? posOffset : ZYXSwizzle(posOffset));
+            Vector3Int size = isVertical ? sizeOffset : ZYXSwizzle(sizeOffset);
             SectionBounds bounds = new SectionBounds(position, size);
             subSections.Add(bounds);
         }
@@ -370,9 +370,9 @@ public class DungeonGenerator : MonoBehaviour
         int spaceUsed = (subDivisions - 1) * (subDivSize + minimums.wallThickness);
         int spaceLeft = space.width - spaceUsed;
         Vector3Int lastDivPosOffset = new Vector3Int(spaceUsed, 0, 0);
-        Vector3Int lastDivPosition = parentBounds.GetPosition() + (isVertical ? ZYXSwizzle(lastDivPosOffset) : lastDivPosOffset);
+        Vector3Int lastDivPosition = parentBounds.GetPosition() + (isVertical ? lastDivPosOffset : ZYXSwizzle(lastDivPosOffset));
         Vector3Int lastDivSizeOffset = new Vector3Int(spaceLeft, parentBounds.height, space.depth);
-        Vector3Int lastDivSize = isVertical ? ZYXSwizzle(lastDivSizeOffset) : lastDivSizeOffset;
+        Vector3Int lastDivSize = isVertical ? lastDivSizeOffset : ZYXSwizzle(lastDivSizeOffset);
         SectionBounds lastDivBounds = new SectionBounds(lastDivPosition, lastDivSize);
         subSections.Add(lastDivBounds);
 
@@ -476,7 +476,7 @@ public class DungeonGenerator : MonoBehaviour
                 endBounds.maxX = parentBounds.maxX;
             }            
         }
-        else if (!RoomDirectionVertical(section.roomDirection))
+        else
         {
             isDeep = ((float)parentBounds.GetSize().x / parentBounds.GetSize().z) > deepRatio;
             bool isXPositive = section.roomDirection == Direction.East;
@@ -539,14 +539,9 @@ public class DungeonGenerator : MonoBehaviour
                 endBounds.maxZ = parentBounds.maxZ;
             }
         }
-        else
-        {
-            Debug.LogError("Section direction is not valid");
-            return null;
-        }
         
         // TODO Remove this /////////////////////////////////////////////
-        bool bufferSides = false;
+        bool bufferSides = true;
         bool broomEnd = true;
         /////////////////////////////////////////////////////////////////
         
