@@ -9,6 +9,7 @@ public class Main : MonoBehaviour
     [SerializeField] Vector3Int size;
     [SerializeField] Material floorMaterial;
     [SerializeField] int seed = 0;
+    [SerializeField] DungeonGenerator.Direction startDirection = DungeonGenerator.Direction.North;
     
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -18,7 +19,7 @@ public class Main : MonoBehaviour
         //HashSet<DungeonGenerator.Door> doors = new HashSet<DungeonGenerator.Door>();
         mesher = gameObject.AddComponent<Mesher>();
         dungeonGenerator = gameObject.AddComponent<DungeonGenerator>();;
-        dungeonGenerator.GenerateDungeon(size, minimumMutators, seed);
+        dungeonGenerator.GenerateDungeon(size, minimumMutators, seed, startDirection);
         foreach (var section in dungeonGenerator.rooms)
         {
             mesher.AddGeometryToMesh(section.position, section.size, new Vector2(1,1), new Vector3(1,1,1));
