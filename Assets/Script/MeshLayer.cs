@@ -4,7 +4,7 @@ using UnityEngine;
 
 [RequireComponent(typeof(MeshFilter))]
 [RequireComponent(typeof(MeshRenderer))]
-public class Mesher : MonoBehaviour
+public class MeshLayer : MonoBehaviour
 {
     private Mesh mesh;
     private List<Vector3> vertices = new List<Vector3>();

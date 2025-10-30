@@ -110,6 +110,7 @@ public class DungeonGenerator : MonoBehaviour
     public class Section
     {
         public Section parent;
+        public Section leadingRoom;
         public List<Section> children = new List<Section>();
         public Vector3Int position;
         public Vector3Int size;
@@ -119,6 +120,11 @@ public class DungeonGenerator : MonoBehaviour
         public bool isRoom;
         public bool isCorridor;
         public int corridorOffset;
+        
+        public List<Door> northDoors = new List<Door>();
+        public List<Door> southDoors = new List<Door>();
+        public List<Door> eastDoors = new List<Door>();
+        public List<Door> westDoors = new List<Door>();
 
         public Section()
         {
@@ -131,6 +137,7 @@ public class DungeonGenerator : MonoBehaviour
             this.isCorridor = false;
             this.parent = null;
         }
+        
         public Section(Section other, bool copyCorridorOffset = false, bool copyParent = true, bool copyChildren = false)
         {
             this.position = other.position;
@@ -144,7 +151,6 @@ public class DungeonGenerator : MonoBehaviour
             this.parent = copyParent ? other.parent : null;
             this.corridorOffset = copyCorridorOffset ? other.corridorOffset : 0;
         }
-
         
         public bool IntersectsFloor(int floor)
         {
@@ -253,11 +259,12 @@ public class DungeonGenerator : MonoBehaviour
     {
         int wallThickness = minimums.wallThickness;
         int doorOffset = CorridorOffsetToDoorOffset(section.corridorOffset);
-        
+
+        Door door = new Door();
         switch (section.direction)
         {
             case Direction.South:
-                return new Door()
+                door = new Door()
                 {
                     position =  new Vector3Int(section.corridorOffset == 0 ? 
                             section.position.x + section.size.x / 2 - minimums.doorSize / 2 : 
@@ -265,8 +272,9 @@ public class DungeonGenerator : MonoBehaviour
                             section.position.y, section.position.z + section.size.z),
                     size = new Vector3Int(minimums.doorSize, minimums.floorHeight, wallThickness)
                 };
+                break;
             case Direction.North:
-                return new Door()
+                door = new Door()
                 {
                     position = new Vector3Int(section.corridorOffset == 0 ?
                         section.position.x + section.size.x / 2 - minimums.doorSize / 2 :
@@ -274,25 +282,31 @@ public class DungeonGenerator : MonoBehaviour
                         section.position.y, section.position.z - wallThickness),
                     size = new Vector3Int(minimums.doorSize, minimums.floorHeight, wallThickness)
                 };
+                break;
             case Direction.East:
-                return new Door()
+                door = new Door()
                 {
                     position = new Vector3Int(section.position.x - wallThickness, section.position.y, 
                         section.corridorOffset == 0 ? section.position.z + section.size.z / 2 - minimums.doorSize / 2 :
                             section.position.z + doorOffset),
                     size = new Vector3Int(wallThickness, minimums.floorHeight, minimums.doorSize)
                 };
+                break;
             case Direction.West:
-                return new Door()
+                door = new Door()
                 {
                     position = new Vector3Int(section.position.x + section.size.x, section.position.y,
                         section.corridorOffset == 0 ? section.position.z + section.size.z / 2 - minimums.doorSize / 2 :
                             section.position.z + doorOffset),
                     size = new Vector3Int(wallThickness, minimums.floorHeight, minimums.doorSize)
                 };
+                break;
             default:
-                return new Door();
+                door = new Door();
+                break;
         }
+
+        return door;
     }
 
     private Direction ClockWise(Direction direction)
@@ -670,7 +684,9 @@ public class DungeonGenerator : MonoBehaviour
         bool isVertical = DirectionIsVertical(section.direction);
         bool isOffset = section.corridorOffset != 0;
         
-        Section mainCorridor = new Section(section, true);
+        Section mainCorridor = new Section(section);
+        mainCorridor.isCorridor = true;
+        mainCorridor.direction = section.direction;
         Section corridorA = new Section(section);
         Section corridorB = new Section(section);
         Section topLeftQuadrant = new Section(section);
@@ -694,9 +710,9 @@ public class DungeonGenerator : MonoBehaviour
             leftCorridor.direction = section.direction == Direction.North ? CounterClockWise(section.direction) : ClockWise(section.direction);
             leftCorridor.isCorridor = true;
             
-            int mainXOffset = isOffset ? mainCorridor.corridorOffset : PlaceCorridorHorizontal(section.size.x, 0f);
-            int leftZOffset = PlaceCorridorHorizontal(section.size.z, 0f);
-            int rightZOffset = PlaceCorridorHorizontal(section.size.z, 0f);
+            int mainXOffset = isOffset ? section.corridorOffset : PlaceCorridorHorizontal(section.size.x, 0.5f);
+            int leftZOffset = PlaceCorridorHorizontal(section.size.z, 0.5f);
+            int rightZOffset = PlaceCorridorHorizontal(section.size.z, 0.5f);
             if (Mathf.Abs(leftZOffset - rightZOffset) < minimums.roomSize * 2)
                 leftZOffset = rightZOffset;
             
@@ -717,7 +733,7 @@ public class DungeonGenerator : MonoBehaviour
                 rightCorridor.position.z + rightZOffset
             );
             rightCorridor.size = new Vector3Int(
-                rightCorridor.size.x - (mainXOffset + minimums.corridorSize + minimums.wallThickness * 2), 
+                rightCorridor.size.x - (mainXOffset + minimums.corridorSize + minimums.wallThickness), 
                 rightCorridor.size.y, 
                 minimums.corridorSize
             );
@@ -750,9 +766,9 @@ public class DungeonGenerator : MonoBehaviour
                 rightCorridor.position.z + minimums.corridorSize + minimums.wallThickness
             );
             topRightQuadrant.size = new Vector3Int(
-                topRightQuadrant.size.x - (mainXOffset + minimums.corridorSize + minimums.wallThickness * 2),
+                rightCorridor.size.x,
                 topRightQuadrant.size.y,
-                topRightQuadrant.size.z - (rightZOffset + minimums.corridorSize + minimums.wallThickness * 2)
+                topRightQuadrant.size.z - (rightZOffset + minimums.corridorSize + minimums.wallThickness)
             );
             
             bottomLeftQuadrant.position = section.position;
@@ -768,7 +784,7 @@ public class DungeonGenerator : MonoBehaviour
                 bottomRightQuadrant.position.z
             );
             bottomRightQuadrant.size = new Vector3Int(
-                bottomRightQuadrant.size.x - (mainXOffset + minimums.corridorSize + minimums.wallThickness * 2),
+               rightCorridor.size.x,
                 bottomRightQuadrant.size.y,
                 rightZOffset - minimums.wallThickness
             );
@@ -785,9 +801,9 @@ public class DungeonGenerator : MonoBehaviour
             bottomCorridor.direction = section.direction == Direction.East ? ClockWise(section.direction) : CounterClockWise(section.direction);
             bottomCorridor.isCorridor = true;
             
-            int mainZOffset = isOffset ? mainCorridor.corridorOffset : PlaceCorridorHorizontal(section.size.z, 0);
-            int topXOffset = PlaceCorridorHorizontal(section.size.x, 0);
-            int bottomXOffset = PlaceCorridorHorizontal(section.size.x, 0);
+            int mainZOffset = isOffset ? section.corridorOffset : PlaceCorridorHorizontal(section.size.z, 0.5f);
+            int topXOffset = PlaceCorridorHorizontal(section.size.x, 0.5f);
+            int bottomXOffset = PlaceCorridorHorizontal(section.size.x, 0.5f);
             if (Mathf.Abs(topXOffset - bottomXOffset) < minimums.roomSize * 2)
                 topXOffset = bottomXOffset;
             
@@ -810,7 +826,7 @@ public class DungeonGenerator : MonoBehaviour
             topCorridor.size = new Vector3Int(
                 minimums.corridorSize,
                 topCorridor.size.y,
-                topCorridor.size.z - (mainZOffset + minimums.corridorSize + minimums.wallThickness * 2)
+                topCorridor.size.z - (mainZOffset + minimums.corridorSize + minimums.wallThickness )
             );
 
             bottomCorridor.position = new Vector3Int(
@@ -832,7 +848,7 @@ public class DungeonGenerator : MonoBehaviour
             topLeftQuadrant.size = new Vector3Int(
                 topXOffset - minimums.wallThickness,
                 topLeftQuadrant.size.y,
-                topLeftQuadrant.size.z - (mainZOffset + minimums.corridorSize + minimums.wallThickness * 2)
+                topLeftQuadrant.size.z - (mainZOffset + minimums.corridorSize + minimums.wallThickness )
             );
             
             topRightQuadrant.position = new Vector3Int(
@@ -841,9 +857,9 @@ public class DungeonGenerator : MonoBehaviour
                 topRightQuadrant.position.z + mainZOffset + minimums.corridorSize + minimums.wallThickness
             );
             topRightQuadrant.size = new Vector3Int(
-                topRightQuadrant.size.x - (topXOffset + minimums.corridorSize + minimums.wallThickness * 2),
+                topRightQuadrant.size.x - (topXOffset + minimums.corridorSize + minimums.wallThickness),
                 topRightQuadrant.size.y,
-                topRightQuadrant.size.z - (mainZOffset + minimums.corridorSize + minimums.wallThickness * 2)
+                topRightQuadrant.size.z - (mainZOffset + minimums.corridorSize + minimums.wallThickness)
             );
 
             bottomLeftQuadrant.position = section.position;
@@ -859,7 +875,7 @@ public class DungeonGenerator : MonoBehaviour
                 bottomRightQuadrant.position.z
             );
             bottomRightQuadrant.size = new Vector3Int(
-                bottomRightQuadrant.size.x - (bottomXOffset + minimums.corridorSize + minimums.wallThickness * 2),
+                bottomRightQuadrant.size.x - (bottomXOffset + minimums.corridorSize + minimums.wallThickness),
                 bottomRightQuadrant.size.y,
                 mainZOffset - minimums.wallThickness
             );
@@ -911,8 +927,8 @@ public class DungeonGenerator : MonoBehaviour
         mainSection.direction = primaryDir;
         mainSection.parent = section;
         
-        int xOffset = Mathf.Max(Mathf.FloorToInt(section.size.x * 0.3f), minimums.roomSize + minimums.wallThickness);
-        int zOffset = Mathf.Max(Mathf.FloorToInt(section.size.z * 0.3f), minimums.roomSize + minimums.wallThickness);
+        int xOffset = Mathf.Max(Mathf.FloorToInt(section.size.x * 0.2f), minimums.roomSize + minimums.wallThickness);
+        int zOffset = Mathf.Max(Mathf.FloorToInt(section.size.z * 0.2f), minimums.roomSize + minimums.wallThickness);
         
         mainSection = ApplyDirectionalOffset(mainSection, primaryDir, xOffset, zOffset);
         mainSection = ApplyDirectionalOffset(mainSection, secondaryDir, xOffset, zOffset);
@@ -1005,9 +1021,10 @@ public class DungeonGenerator : MonoBehaviour
 
         if (DirectionIsVertical(primaryDir))
         {
-            int corridorXOffset = PlaceCorridorHorizontal(section.size.x, 0f);
+            int eastOffset = secondaryDir == Direction.East ? xOffset : 0;
+            int corridorXOffset = PlaceCorridorHorizontal(mainSection.size.x, 0.5f);
             corridor.position = new Vector3Int(
-                corridor.position.x + corridorXOffset,
+                corridor.position.x + corridorXOffset + eastOffset,
                 corridor.position.y,
                 primaryDir == Direction.North 
                     ? corridor.position.z 
@@ -1027,34 +1044,35 @@ public class DungeonGenerator : MonoBehaviour
                     : leftBuffer.position.z + mainSection.size.z + minimums.wallThickness
             );
             leftBuffer.size = new Vector3Int(
-                corridorXOffset - minimums.wallThickness,
+                (corridorXOffset + eastOffset) - minimums.wallThickness,
                 leftBuffer.size.y,
                 zOffset - minimums.wallThickness
             );
 
             rightBuffer.position = new Vector3Int(
-                rightBuffer.position.x + corridorXOffset + minimums.corridorSize + minimums.wallThickness,
+                rightBuffer.position.x + corridorXOffset + eastOffset + minimums.corridorSize + minimums.wallThickness,
                 rightBuffer.position.y,
                 primaryDir == Direction.North
                     ? rightBuffer.position.z
                     : rightBuffer.position.z + mainSection.size.z + minimums.wallThickness
             );
             rightBuffer.size = new Vector3Int(
-                rightBuffer.size.x - (corridorXOffset + minimums.corridorSize + minimums.wallThickness),
+                rightBuffer.size.x - (corridorXOffset + eastOffset + minimums.corridorSize + minimums.wallThickness),
                 rightBuffer.size.y,
                 zOffset - minimums.wallThickness
             );
-            mainSection.corridorOffset = corridorXOffset;
+            mainSection.corridorOffset = secondaryDir == Direction.East ? mainSection.size.x - corridorXOffset - minimums.corridorSize : corridorXOffset;
         }
         else
         {
-            int corridorZOffset = PlaceCorridorHorizontal(section.size.z, 0f);
+            int northOffset = secondaryDir == Direction.North ? zOffset : 0;
+            int corridorZOffset = PlaceCorridorHorizontal(mainSection.size.z, 0.5f);
             corridor.position = new Vector3Int(
                 primaryDir == Direction.East
                     ? corridor.position.x 
                     : corridor.position.x + mainSection.size.x + minimums.wallThickness,
                 corridor.position.y,
-                corridor.position.z + corridorZOffset
+                corridor.position.z + (corridorZOffset + northOffset)
             );
             corridor.size = new Vector3Int(
                 xOffset - minimums.wallThickness,
@@ -1067,12 +1085,12 @@ public class DungeonGenerator : MonoBehaviour
                     ? leftBuffer.position.x
                     : leftBuffer.position.x + mainSection.size.x + minimums.wallThickness,
                 leftBuffer.position.y,
-                leftBuffer.position.z + corridorZOffset + minimums.corridorSize + minimums.wallThickness
+                leftBuffer.position.z + corridorZOffset + northOffset + minimums.corridorSize + minimums.wallThickness
             );
             leftBuffer.size = new Vector3Int(
                 xOffset - minimums.wallThickness,
                 leftBuffer.size.y,
-                leftBuffer.size.z - (corridorZOffset + minimums.corridorSize + minimums.wallThickness)
+                leftBuffer.size.z - (corridorZOffset + northOffset + minimums.corridorSize + minimums.wallThickness)
             );
 
             rightBuffer.position = new Vector3Int(
@@ -1085,21 +1103,21 @@ public class DungeonGenerator : MonoBehaviour
             rightBuffer.size = new Vector3Int(
                 xOffset - minimums.wallThickness,
                 rightBuffer.size.y,
-                corridorZOffset - minimums.wallThickness
+                (corridorZOffset + northOffset) - minimums.wallThickness
             );
-            mainSection.corridorOffset = corridorZOffset;
+            mainSection.corridorOffset = secondaryDir == Direction.North ? mainSection.size.z - corridorZOffset - minimums.corridorSize : corridorZOffset;
         }
         
         if(!DirectionIsVertical(primaryDir) && secondaryDir == Direction.North)
             if(primaryDir == Direction.East)
-                mainSection.corridorOffset = mainSection.size.z - (mainSection.corridorOffset + minimums.corridorSize + minimums.wallThickness);
+                mainSection.corridorOffset = mainSection.size.z - (mainSection.corridorOffset + minimums.corridorSize);
             else
-                mainSection.corridorOffset = mainSection.size.z - (mainSection.corridorOffset + minimums.corridorSize + minimums.wallThickness);
+                mainSection.corridorOffset = mainSection.size.z - (mainSection.corridorOffset + minimums.corridorSize);
         else if(DirectionIsVertical(primaryDir) && secondaryDir == Direction.East)
             if(primaryDir == Direction.South)
-                mainSection.corridorOffset = mainSection.size.x - (mainSection.corridorOffset + minimums.corridorSize + minimums.wallThickness);
+                mainSection.corridorOffset = mainSection.size.x - (mainSection.corridorOffset + minimums.corridorSize);
             else
-                mainSection.corridorOffset = mainSection.size.x - (mainSection.corridorOffset + minimums.corridorSize + minimums.wallThickness);
+                mainSection.corridorOffset = mainSection.size.x - (mainSection.corridorOffset + minimums.corridorSize);
         
         secondaryBuffer = BufferDivide(secondaryBuffer, 0);
         rightBuffer = BufferDivide(rightBuffer, 0);

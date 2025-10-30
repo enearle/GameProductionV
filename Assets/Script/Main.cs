@@ -4,33 +4,42 @@ using UnityEngine;
 public class Main : MonoBehaviour
 {
     DungeonGenerator dungeonGenerator;
-    Mesher mesher;
     [SerializeField] DungeonGenerator.MinimumMutators minimumMutators;
     [SerializeField] Vector3Int size;
     [SerializeField] Material floorMaterial;
     [SerializeField] int seed = 0;
     [SerializeField] DungeonGenerator.Direction startDirection = DungeonGenerator.Direction.North;
+    [SerializeField] GameObject meshLayerPrefab;
+
+    private MeshLayer doorLayer;
+    private MeshLayer roomLayer;
+    private MeshLayer corridorLayer;
     
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        
-        
-        //HashSet<DungeonGenerator.Door> doors = new HashSet<DungeonGenerator.Door>();
-        mesher = gameObject.AddComponent<Mesher>();
+        doorLayer = Instantiate(meshLayerPrefab).GetComponent<MeshLayer>();
+        roomLayer = Instantiate(meshLayerPrefab).GetComponent<MeshLayer>();
+        corridorLayer = Instantiate(meshLayerPrefab).GetComponent<MeshLayer>();
         dungeonGenerator = gameObject.AddComponent<DungeonGenerator>();;
         dungeonGenerator.GenerateDungeon(size, minimumMutators, seed, startDirection);
         foreach (var section in dungeonGenerator.rooms)
         {
-            mesher.AddGeometryToMesh(section.position, section.size, new Vector2(1,1), new Vector3(1,1,1));
+            if (section.isCorridor)
+                corridorLayer.AddGeometryToMesh(section.position, section.size, new Vector2(1,1), new Vector3(1,1,1));
+            else
+                roomLayer.AddGeometryToMesh(section.position, section.size, new Vector2(1,1), new Vector3(1,1,1));
         }
 
         foreach (var section in dungeonGenerator.doors)
         {
-            mesher.AddGeometryToMesh(section.position, section.size, new Vector2(1,1), new Vector3(1,1,1));
+            doorLayer.AddGeometryToMesh(section.position, section.size, new Vector2(1,1), new Vector3(1,1,1));
         }
         
-        mesher.UpdateMesh();
-        mesher.SetMaterial(floorMaterial);
+        corridorLayer.UpdateMesh();
+        roomLayer.UpdateMesh();
+        doorLayer.UpdateMesh();
+        roomLayer.SetMaterial(floorMaterial);
+        corridorLayer.SetMaterial(floorMaterial);
     }
 }
