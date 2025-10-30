@@ -594,8 +594,9 @@ MonoBehaviour:
     entropyThreshold: 0.5
     macroThreshold: 400
   size: {x: 1000, y: 12, z: 1000}
-  floorMaterial: {fileID: -876546973899608171, guid: e0d570621a2f37048bd836e0877af950, type: 3}
-  seed: 405
+  floorMaterial: {fileID: 2100000, guid: 2b067afee4ffc464596747f8312a1557, type: 2}
+  wallMaterial: {fileID: 2100000, guid: ad59e829d750fbc4883edda60a188234, type: 2}
+  seed: 83
   startDirection: 0
   meshLayerPrefab: {fileID: 2121597944691882002, guid: 1a19867baca30a24080cde53c7136804, type: 3}
 --- !u!1660057539 &9223372036854775807

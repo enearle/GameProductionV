@@ -23,13 +23,15 @@ public class CameraFlight : MonoBehaviour
     private InputAction moveAction;
     private InputAction lookAction;
     private InputAction sprintAction;
+    private InputAction closeAction;
 
     void Awake()
     {
         moveAction = playerInput.actions["Move"];
         lookAction = playerInput.actions["Look"];
         sprintAction = playerInput.actions["Sprint"];
-        //verticalMoveAction = playerInput.actions["VerticalMove"];
+        closeAction = playerInput.actions["Close"];
+        
 
         targetPosition = transform.position;
         targetRotation = transform.rotation;
@@ -44,7 +46,13 @@ public class CameraFlight : MonoBehaviour
         moveAction.canceled += OnMoveCanceled;
         sprintAction.performed += OnSprintPerformed;
         sprintAction.canceled += OnSprintCanceled;
+        closeAction.performed += OnClosePerformed;
 
+    }
+
+    private void OnClosePerformed(InputAction.CallbackContext obj)
+    {
+        Application.Quit();
     }
 
     void OnDisable()
