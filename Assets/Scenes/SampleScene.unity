@@ -585,7 +585,8 @@ MonoBehaviour:
   minimumMutators:
     roomSize: 10
     corridorSize: 6
-    doorSize: 4
+    doorWidth: 4
+    doorHeight: 8
     floorHeight: 12
     maxFloorUsage: 0
     wallThickness: 1
@@ -593,7 +594,7 @@ MonoBehaviour:
     entropyThreshold: 0.5
     macroThreshold: 400
   size: {x: 1000, y: 12, z: 1000}
-  floorMaterial: {fileID: 10302, guid: 0000000000000000f000000000000000, type: 0}
+  floorMaterial: {fileID: -876546973899608171, guid: e0d570621a2f37048bd836e0877af950, type: 3}
   seed: 405
   startDirection: 0
   meshLayerPrefab: {fileID: 2121597944691882002, guid: 1a19867baca30a24080cde53c7136804, type: 3}
