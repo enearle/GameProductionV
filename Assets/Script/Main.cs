@@ -4,14 +4,22 @@ using static DungeonGenerator;
 
 public class Main : MonoBehaviour
 {
-    DungeonGenerator dungeonGenerator;
-    [SerializeField] DungeonGenerator.MinimumMutators minimumMutators;
-    [SerializeField] Vector3Int size;
-    [SerializeField] Material floorMaterial;
-    [SerializeField] Material wallMaterial;
-    [SerializeField] int seed = 0;
-    [SerializeField] DungeonGenerator.Direction startDirection = DungeonGenerator.Direction.North;
-    [SerializeField] GameObject meshLayerPrefab;
+    private DungeonGenerator dungeonGenerator;
+    [SerializeField] private DungeonGenerator.MinimumMutators minimumMutators;
+    [SerializeField] private Vector3Int size;
+    [SerializeField] private Material floorMaterial;
+    [SerializeField] private Material wallMaterial;
+    [SerializeField] private int seed = 0;
+    [SerializeField] private DungeonGenerator.Direction startDirection = DungeonGenerator.Direction.North;
+    [SerializeField] private GameObject meshLayerPrefab;
+    
+    // For testing /////////////////////////////////////////////////////////////////////////////////////////////////////
+    public static Main instance;
+    private bool generationCompleted = false;
+    public bool GetGenerationCompleted() => generationCompleted;
+    public DungeonGenerator GetDungeonGenerator() => dungeonGenerator;
+    public MinimumMutators GetMinimumMutators() => minimumMutators;
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     private MeshLayer doorLayer;
     private MeshLayer roomLayer;
@@ -21,6 +29,14 @@ public class Main : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
+        if (instance == null) 
+            instance = this;
+        else
+        {
+            Destroy(gameObject);
+            return;
+        }
+        
         doorLayer = Instantiate(meshLayerPrefab).GetComponent<MeshLayer>();
         roomLayer = Instantiate(meshLayerPrefab).GetComponent<MeshLayer>();
         corridorLayer = Instantiate(meshLayerPrefab).GetComponent<MeshLayer>();
@@ -57,6 +73,6 @@ public class Main : MonoBehaviour
         roomLayer.UpdateMesh();
         doorLayer.UpdateMesh();
         wallLayer.UpdateMesh();
-
+        generationCompleted = true;
     }
 }
