@@ -19,6 +19,8 @@ public class Main : MonoBehaviour
     public bool GetGenerationCompleted() => generationCompleted;
     public DungeonGenerator GetDungeonGenerator() => dungeonGenerator;
     public MinimumMutators GetMinimumMutators() => minimumMutators;
+    
+    public int GetSeed() => seed;
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     private MeshLayer doorLayer;

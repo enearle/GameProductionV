@@ -8,24 +8,278 @@ using static DungeonGenerator;
 
 public class GenerationTest
 {
-    // A Test behaves as an ordinary method
-    [Test]
-    public void GenerationTestSimplePasses()
+
+    [UnityTest]
+    public IEnumerator DoorTestPositive()
     {
-        // Use the Assert class to test conditions
+        yield return DefaultLoad();
+
+        TestDoorsToFarForward();
+    }
+    
+    [UnityTest]
+    public IEnumerator DoorTestNegative()
+    {
+        yield return DefaultLoad();
+
+        TestDoorsToFarBackward();
     }
 
-    // A UnityTest behaves like a coroutine in Play Mode. In Edit Mode you can use
-    // `yield return null;` to skip a frame.
+
+    private void TestDoorsToFarForward()
+    {
+        MinimumMutators minimumMutators = Main.instance.GetMinimumMutators();
+        Vector3Int wallOffset = new Vector3Int(minimumMutators.wallThickness, 0, minimumMutators.wallThickness);
+        HashSet<string> anomalies = new HashSet<string>();
+        
+        List<Section> rooms = Main.instance.GetDungeonGenerator().rooms;
+        
+        for (int i =0; i < rooms.Count; i++)
+        {
+            List<int> eastDoors = rooms[i].eastDoors;
+            for (int j = 0; j < eastDoors.Count; j++)
+            {
+                int doorPosInRoom = eastDoors[j] - rooms[i].position.z;
+                
+                if (doorPosInRoom > rooms[i].size.z)
+                    anomalies.Add($"Room {i} east door {j} starts outside of room bounds. Door offset: {doorPosInRoom} Wall length: {rooms[i].size.z}\n\n");
+                else if (doorPosInRoom > rooms[i].size.z - minimumMutators.doorWidth)
+                    anomalies.Add($"Room {i} east door {j} ends outside of room bounds. Door offset: {doorPosInRoom} Wall length: {rooms[i].size.z}\n\n");
+            }
+            
+            List<int> westDoors = rooms[i].westDoors;
+            for (int j = 0; j < westDoors.Count; j++)
+            {
+                int doorPosInRoom = westDoors[j] - rooms[i].position.z;
+                
+                if (doorPosInRoom > rooms[i].size.z)
+                    anomalies.Add($"Room {i} west door {j} starts outside of room bounds. Door offset: {doorPosInRoom} Wall length: {rooms[i].size.z}\n\n");
+                else if (doorPosInRoom > rooms[i].size.z - minimumMutators.doorWidth)
+                    anomalies.Add($"Room {i} west door {j} ends outside of room bounds. Door offset: {doorPosInRoom} Wall length: {rooms[i].size.z}\n\n");
+            }
+            
+            List<int> northDoors = rooms[i].northDoors;
+            for (int j = 0; j < northDoors.Count; j++)
+            {
+                int doorPosInRoom = northDoors[j] - rooms[i].position.x;
+                
+                if (doorPosInRoom > rooms[i].size.x)
+                    anomalies.Add($"Room {i} north door {j} starts outside of room bounds. Door offset: {doorPosInRoom} Wall length: {rooms[i].size.x}\n\n");
+                else if (doorPosInRoom > rooms[i].size.x - minimumMutators.doorWidth)
+                    anomalies.Add($"Room {i} north door {j} ends outside of room bounds. Door offset: {doorPosInRoom} Wall length: {rooms[i].size.x}\n\n");
+            }
+            
+            List<int> southDoors = rooms[i].southDoors;
+            for (int j = 0; j < southDoors.Count; j++)
+            {
+                int doorPosInRoom = southDoors[j] - rooms[i].position.x;
+                
+                if (doorPosInRoom > rooms[i].size.x)
+                    anomalies.Add($"Room {i} south door {j} starts outside of room bounds. Door offset: {doorPosInRoom} Wall length: {rooms[i].size.x}\n\n");
+                else if (doorPosInRoom > rooms[i].size.x - minimumMutators.doorWidth)
+                    anomalies.Add($"Room {i} south door {j} ends outside of room bounds. Door offset: {doorPosInRoom} Wall length: {rooms[i].size.x}\n\n");
+            }
+        }
+        
+        string p = "------------------------------------------------------------------------------------\n";
+        Assert.IsTrue(anomalies.Count == 0,
+            p + $"\t\tDoor Positive Anomalies Found in Seed: {Main.instance.GetSeed()}\n" + p + '\n' +
+            string.Join("", anomalies));
+    }
+    
+        private void TestDoorsToFarBackward()
+    {
+        MinimumMutators minimumMutators = Main.instance.GetMinimumMutators();
+        Vector3Int wallOffset = new Vector3Int(minimumMutators.wallThickness, 0, minimumMutators.wallThickness);
+        HashSet<string> anomalies = new HashSet<string>();
+        
+        List<Section> rooms = Main.instance.GetDungeonGenerator().rooms;
+        
+        for (int i =0; i < rooms.Count; i++)
+        {
+            List<int> eastDoors = rooms[i].eastDoors;
+            for (int j = 0; j < eastDoors.Count; j++)
+            {
+                int doorPosInRoom = eastDoors[j] - rooms[i].position.z;
+                if (doorPosInRoom < 0)
+                    anomalies.Add($"Room {i} east door {j} has a negative position. Door offset: {doorPosInRoom} Wall length: {rooms[i].size.z}\n\n");
+            }
+            
+            List<int> westDoors = rooms[i].westDoors;
+            for (int j = 0; j < westDoors.Count; j++)
+            {
+                int doorPosInRoom = westDoors[j] - rooms[i].position.z;
+                if (doorPosInRoom < 0)
+                    anomalies.Add($"Room {i} west door {j} has a negative position. Door offset: {doorPosInRoom} Wall length: {rooms[i].size.z}\n\n");
+            }
+            
+            List<int> northDoors = rooms[i].northDoors;
+            for (int j = 0; j < northDoors.Count; j++)
+            {
+                int doorPosInRoom = northDoors[j] - rooms[i].position.x;
+                if (doorPosInRoom < 0)
+                    anomalies.Add($"Room {i} north door {j} has a negative position. Door offset: {doorPosInRoom} Wall length: {rooms[i].size.x}\n\n");
+            }
+            
+            List<int> southDoors = rooms[i].southDoors;
+            for (int j = 0; j < southDoors.Count; j++)
+            {
+                int doorPosInRoom = southDoors[j] - rooms[i].position.x;
+                if (doorPosInRoom < 0)
+                    anomalies.Add($"Room {i} south door {j} has a negative position. Door offset: {doorPosInRoom} Wall length: {rooms[i].size.x}\n\n");
+            }
+        }
+        
+        string p = "------------------------------------------------------------------------------------\n";
+        Assert.IsTrue(anomalies.Count == 0,
+            p + $"\t\tDoor Negative Anomalies Found in Seed: {Main.instance.GetSeed()}\n" + p + '\n' +
+            string.Join("", anomalies));
+    }
+        
     [UnityTest]
-    public IEnumerator GenerationTestWithEnumeratorPasses()
+    public IEnumerator WallTestZeroOrNegativeLength()
+    {
+        yield return DefaultLoad();
+
+        TestWallsZeroLengthOrNegativeSize();
+    }
+    
+    [UnityTest]
+    public IEnumerator WallTestOverlap()
+    {
+        yield return DefaultLoad();
+        
+        TestWallsOverlap();
+    }
+
+    private void TestWallsZeroLengthOrNegativeSize()
+    {
+        MinimumMutators minimumMutators = Main.instance.GetMinimumMutators();
+        HashSet<string> anomalies = new HashSet<string>();
+
+        for (int i = 0; i < Main.instance.GetDungeonGenerator().rooms.Count; i++)
+        {
+            Wall[] iSectionWalls = Main.instance.GetDungeonGenerator().rooms[i]
+                .GetWalls(minimumMutators.doorHeight, minimumMutators.doorWidth);
+
+            for (int k = 0; k < iSectionWalls.Length; k++)
+            {
+                Vector3Int wall1Start = iSectionWalls[k].position;
+                Vector3Int wall1End = wall1Start + iSectionWalls[k].size;
+
+                if (wall1Start == wall1End)
+                {
+                    anomalies.Add($"Room: {i}, Wall: {k} has a length of 0. {wall1Start}. \n\n");
+                }
+                else if (iSectionWalls[k].size.x < 0 || iSectionWalls[k].size.z < 0)
+                {
+                    anomalies.Add($"Room: {i}, Wall: {k} has a negative size. {wall1Start}.\n\n");
+                }
+            }
+        }
+
+        string p = "------------------------------------------------------------------------------------\n";
+        Assert.IsTrue(anomalies.Count == 0,
+            p + $"\t\tWall Zero/Negative Anomalies Found in Seed: {Main.instance.GetSeed()}\n" + p + '\n' +
+            string.Join("", anomalies));
+    }
+    
+    private void TestWallsOverlap()
+    {
+        MinimumMutators minimumMutators = Main.instance.GetMinimumMutators();
+        HashSet<string> anomalies = new HashSet<string>();
+
+        for (int i = 0; i < Main.instance.GetDungeonGenerator().rooms.Count; i++)
+        {
+            Wall[] iSectionWalls = Main.instance.GetDungeonGenerator().rooms[i]
+                .GetWalls(minimumMutators.doorHeight, minimumMutators.doorWidth);
+
+            for (int j = i + 1; j < Main.instance.GetDungeonGenerator().rooms.Count; j++)
+            {
+                Wall[] jSectionWalls = Main.instance.GetDungeonGenerator().rooms[j]
+                    .GetWalls(minimumMutators.doorHeight, minimumMutators.doorWidth);
+
+                for (int k = 0; k < iSectionWalls.Length; k++)
+                {
+                    for (int l = 0; l < jSectionWalls.Length; l++)
+                    {
+                        Vector3Int wall1Start = iSectionWalls[k].position;
+                        Vector3Int wall1End = wall1Start + iSectionWalls[k].size;
+                        Vector3Int wall2Start = jSectionWalls[l].position;
+                        Vector3Int wall2End = wall2Start + jSectionWalls[l].size;
+
+                        if (wall1Start == wall2Start || wall1Start == wall2End ||
+                            wall1End == wall2Start || wall1End == wall2End) continue;
+
+                        bool orthogonal;
+                        if (AxisAlignedLinesOverlap(wall1Start, wall1End, wall2Start, wall2End, out orthogonal))
+                        {
+                            anomalies.Add( orthogonal ? "Orthogonal" : "Parallel" + " " +
+                                $"Wall {k} in room {i} overlaps with wall {l} in room {j}.\n" +
+                                $"Wall 1 start: {wall1Start}, end: {wall1End}. Wall 2 start: {wall2Start}, end: {wall2End} \n" +
+                                $"Room 1 pos: {Main.instance.GetDungeonGenerator().rooms[i].position}, size: {Main.instance.GetDungeonGenerator().rooms[i].size} \n" +
+                                $"Room 2 pos: {Main.instance.GetDungeonGenerator().rooms[j].position}, size: {Main.instance.GetDungeonGenerator().rooms[j].size} \n\n");
+                        }
+                    }
+                }
+            }
+        }
+
+        string p = "------------------------------------------------------------------------------------\n";
+        Assert.IsTrue(anomalies.Count == 0,
+            p + $"\t\tWall Overlap Anomalies Found in Seed: {Main.instance.GetSeed()}\n" + p + '\n' +
+            string.Join("", anomalies));
+    }
+
+    private bool AxisAlignedLinesOverlap(Vector3Int line1Start, Vector3Int line1End, Vector3Int line2Start,
+        Vector3Int line2End, out bool orthogonal)
+    {
+        bool wall1Vertical = line1Start.x == line1End.x;
+        bool wall2Vertical = line2Start.x == line2End.x;
+        
+        if (wall1Vertical == wall2Vertical)
+        {
+            orthogonal = false;
+            if (wall1Vertical)
+            {
+                if (line1Start.x == line2Start.x)
+                    return RangeContainsIntExclusive(line1Start.z, line2Start.z, line2End.z) || RangeContainsIntExclusive(line1End.z, line2Start.z, line2End.z);
+            }
+            else
+            {
+                if (line1Start.z == line2Start.z)
+                    return RangeContainsIntExclusive(line1Start.x, line2Start.x, line2End.x) || RangeContainsIntExclusive(line1End.x, line2Start.x, line2End.x);
+            }
+            return false;
+        }
+        
+        
+        orthogonal = true;
+        if (wall1Vertical)
+        {
+            return RangeContainsIntExclusive(line1Start.x, line2Start.x, line2End.x) && RangeContainsIntExclusive(line2Start.z, line1Start.z, line1End.z);
+        }
+        else
+        {
+            return RangeContainsIntExclusive(line2Start.x, line1Start.x, line1End.x) && RangeContainsIntExclusive(line1Start.z, line2Start.z, line2End.z);
+        }
+    }
+    
+    bool RangeContainsIntExclusive(int value, int a, int b)
+    {
+        int min = Mathf.Min(a, b);
+        int max = Mathf.Max(a, b);
+        return value > min && value < max;
+    }
+
+    private IEnumerator DefaultLoad()
     {
         SceneManager.LoadScene(0);
-        yield return null; 
-        
+        yield return null;
+
         float timeoutDuration = 30f;
         float startTime = Time.time;
-    
+
         while (!Main.instance || !Main.instance.GetGenerationCompleted())
         {
             if (Time.time - startTime > timeoutDuration)
@@ -35,79 +289,6 @@ public class GenerationTest
 
             yield return null;
         }
-
-        TestWalls();
     }
-
-    private void TestWalls()
-    {
-        MinimumMutators minimumMutators = Main.instance.GetMinimumMutators();
-        List<Wall> allWalls = new List<Wall>();
-        List<Wall> northWalls = new List<Wall>();
-        List<Wall> southWalls = new List<Wall>();
-        List<Wall> eastWalls = new List<Wall>();
-        List<Wall> westWalls = new List<Wall>();
-        
-        foreach (Section section in Main.instance.GetDungeonGenerator().rooms)
-            allWalls.AddRange(section.GetWalls(minimumMutators.doorHeight, minimumMutators.doorWidth));
-        
-        Assert.IsTrue(allWalls.Count > 0, "No walls were generated.");
-
-        foreach (Wall wall in allWalls)
-        {
-            switch (wall.direction)
-            {
-                case Direction.North:
-                    northWalls.Add(wall);
-                    break;
-                case Direction.South:
-                    southWalls.Add(wall);
-                    break;
-                case Direction.East:
-                    eastWalls.Add(wall);
-                    break;
-                case Direction.West:
-                    westWalls.Add(wall);
-                    break;
-            }
-        }
-        
-        CheckForOverlap(northWalls, true);
-        CheckForOverlap(southWalls, true);
-        CheckForOverlap(eastWalls, false);
-        CheckForOverlap(westWalls, false);
-        
-        northWalls.AddRange(southWalls);
-        eastWalls.AddRange(westWalls);
-        
-        CheckForOverlap(northWalls, true);
-        CheckForOverlap(eastWalls, false);
-    }
-
-    private void CheckForOverlap(List<Wall> walls, bool isXAxis)
-    {
-        for (int i = 0; i < walls.Count; i++)
-        {
-            for (int j = 0; j < walls.Count; j++)
-            {
-                if (i == j) continue;
-                
-                int pos1 = isXAxis ? walls[i].position.z : walls[i].position.x;
-                int pos2 = isXAxis ? walls[j].position.z : walls[j].position.x;
-                
-                if (pos1 != pos2) continue;
-                
-                int wall1Min = isXAxis ? walls[i].position.x : walls[i].position.z;
-                int wall1Max = isXAxis ? walls[i].position.x + walls[i].size.x : walls[i].position.z + walls[i].size.z;
-                int wall2Min = isXAxis ? walls[j].position.x : walls[j].position.z;
-                int wall2Max = isXAxis ? walls[j].position.x + walls[j].size.x : walls[j].position.z + walls[j].size.z;
-
-                
-                
-                Assert.IsTrue(wall1Min < wall2Max && wall2Min < wall1Max,
-                    $"Wall overlap detected between walls at position mins {wall1Min} and {wall2Min}"
-                    + $" with position maxes {wall1Max} and {wall2Max}.");
-            }
-        }
-    }
+    
 }
