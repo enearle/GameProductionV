@@ -5,6 +5,9 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 using static DungeonGenerator;
+using static Sections;
+using static Directions;
+using static Walls;
 
 public class GenerationTest
 {
@@ -36,15 +39,20 @@ public class GenerationTest
         
         for (int i =0; i < rooms.Count; i++)
         {
+            string parentDivisionType = rooms[i].parent.divisionType.ToString();
+            string grandParentDivisionType = rooms[i].parent.parent.divisionType.ToString();
+            
             List<int> eastDoors = rooms[i].eastDoors;
             for (int j = 0; j < eastDoors.Count; j++)
             {
                 int doorPosInRoom = eastDoors[j] - rooms[i].position.z;
                 
                 if (doorPosInRoom > rooms[i].size.z)
-                    anomalies.Add($"Room {i} east door {j} starts outside of room bounds. Door offset: {doorPosInRoom} Wall length: {rooms[i].size.z}\n\n");
+                    anomalies.Add($"Room {i} east door {j} starts outside of room bounds. Door offset: {doorPosInRoom} Wall length: {rooms[i].size.z}\n" +
+                                  $"Parent division type: {parentDivisionType}, Grandparent division type: {grandParentDivisionType}.\n\n");
                 else if (doorPosInRoom > rooms[i].size.z - minimumMutators.doorWidth)
-                    anomalies.Add($"Room {i} east door {j} ends outside of room bounds. Door offset: {doorPosInRoom} Wall length: {rooms[i].size.z}\n\n");
+                    anomalies.Add($"Room {i} east door {j} ends outside of room bounds. Door offset: {doorPosInRoom} Wall length: {rooms[i].size.z}\n" +
+                                  $"Parent division type: {parentDivisionType}, Grandparent division type: {grandParentDivisionType}.\n\n");
             }
             
             List<int> westDoors = rooms[i].westDoors;
@@ -53,9 +61,11 @@ public class GenerationTest
                 int doorPosInRoom = westDoors[j] - rooms[i].position.z;
                 
                 if (doorPosInRoom > rooms[i].size.z)
-                    anomalies.Add($"Room {i} west door {j} starts outside of room bounds. Door offset: {doorPosInRoom} Wall length: {rooms[i].size.z}\n\n");
+                    anomalies.Add($"Room {i} west door {j} starts outside of room bounds. Door offset: {doorPosInRoom} Wall length: {rooms[i].size.z}\n" +
+                                  $"Parent division type: {parentDivisionType}, Grandparent division type: {grandParentDivisionType}.\n\n");
                 else if (doorPosInRoom > rooms[i].size.z - minimumMutators.doorWidth)
-                    anomalies.Add($"Room {i} west door {j} ends outside of room bounds. Door offset: {doorPosInRoom} Wall length: {rooms[i].size.z}\n\n");
+                    anomalies.Add($"Room {i} west door {j} ends outside of room bounds. Door offset: {doorPosInRoom} Wall length: {rooms[i].size.z}\n" +
+                                  $"Parent division type: {parentDivisionType}, Grandparent division type: {grandParentDivisionType}.\n\n");
             }
             
             List<int> northDoors = rooms[i].northDoors;
@@ -64,9 +74,11 @@ public class GenerationTest
                 int doorPosInRoom = northDoors[j] - rooms[i].position.x;
                 
                 if (doorPosInRoom > rooms[i].size.x)
-                    anomalies.Add($"Room {i} north door {j} starts outside of room bounds. Door offset: {doorPosInRoom} Wall length: {rooms[i].size.x}\n\n");
+                    anomalies.Add($"Room {i} north door {j} starts outside of room bounds. Door offset: {doorPosInRoom} Wall length: {rooms[i].size.x}\n" +
+                                  $"Parent division type: {parentDivisionType}, Grandparent division type: {grandParentDivisionType}.\n\n");
                 else if (doorPosInRoom > rooms[i].size.x - minimumMutators.doorWidth)
-                    anomalies.Add($"Room {i} north door {j} ends outside of room bounds. Door offset: {doorPosInRoom} Wall length: {rooms[i].size.x}\n\n");
+                    anomalies.Add($"Room {i} north door {j} ends outside of room bounds. Door offset: {doorPosInRoom} Wall length: {rooms[i].size.x}\n" +
+                                  $"Parent division type: {parentDivisionType}, Grandparent division type: {grandParentDivisionType}.\n\n");
             }
             
             List<int> southDoors = rooms[i].southDoors;
@@ -75,9 +87,11 @@ public class GenerationTest
                 int doorPosInRoom = southDoors[j] - rooms[i].position.x;
                 
                 if (doorPosInRoom > rooms[i].size.x)
-                    anomalies.Add($"Room {i} south door {j} starts outside of room bounds. Door offset: {doorPosInRoom} Wall length: {rooms[i].size.x}\n\n");
+                    anomalies.Add($"Room {i} south door {j} starts outside of room bounds. Door offset: {doorPosInRoom} Wall length: {rooms[i].size.x}\n" +
+                                  $"Parent division type: {parentDivisionType}, Grandparent division type: {grandParentDivisionType}.\n\n");
                 else if (doorPosInRoom > rooms[i].size.x - minimumMutators.doorWidth)
-                    anomalies.Add($"Room {i} south door {j} ends outside of room bounds. Door offset: {doorPosInRoom} Wall length: {rooms[i].size.x}\n\n");
+                    anomalies.Add($"Room {i} south door {j} ends outside of room bounds. Door offset: {doorPosInRoom} Wall length: {rooms[i].size.x}\n" +
+                                  $"Parent division type: {parentDivisionType}, Grandparent division type: {grandParentDivisionType}.\n\n");
             }
         }
         
@@ -87,7 +101,7 @@ public class GenerationTest
             string.Join("", anomalies));
     }
     
-        private void TestDoorsToFarBackward()
+    private void TestDoorsToFarBackward()
     {
         MinimumMutators minimumMutators = Main.instance.GetMinimumMutators();
         Vector3Int wallOffset = new Vector3Int(minimumMutators.wallThickness, 0, minimumMutators.wallThickness);
@@ -97,12 +111,16 @@ public class GenerationTest
         
         for (int i =0; i < rooms.Count; i++)
         {
+            string parentDivisionType = rooms[i].parent.divisionType.ToString();
+            string grandParentDivisionType = rooms[i].parent.parent.divisionType.ToString();
+            
             List<int> eastDoors = rooms[i].eastDoors;
             for (int j = 0; j < eastDoors.Count; j++)
             {
                 int doorPosInRoom = eastDoors[j] - rooms[i].position.z;
                 if (doorPosInRoom < 0)
-                    anomalies.Add($"Room {i} east door {j} has a negative position. Door offset: {doorPosInRoom} Wall length: {rooms[i].size.z}\n\n");
+                    anomalies.Add($"Room {i} east door {j} has a negative position. Door offset: {doorPosInRoom} Wall length: {rooms[i].size.z}\n" +
+                                  $"Parent division type: {parentDivisionType}, Grandparent division type: {grandParentDivisionType}.\n\n");
             }
             
             List<int> westDoors = rooms[i].westDoors;
@@ -110,7 +128,8 @@ public class GenerationTest
             {
                 int doorPosInRoom = westDoors[j] - rooms[i].position.z;
                 if (doorPosInRoom < 0)
-                    anomalies.Add($"Room {i} west door {j} has a negative position. Door offset: {doorPosInRoom} Wall length: {rooms[i].size.z}\n\n");
+                    anomalies.Add($"Room {i} west door {j} has a negative position. Door offset: {doorPosInRoom} Wall length: {rooms[i].size.z}\n" +
+                                  $"Parent division type: {parentDivisionType}, Grandparent division type: {grandParentDivisionType}.\n\n");
             }
             
             List<int> northDoors = rooms[i].northDoors;
@@ -118,7 +137,8 @@ public class GenerationTest
             {
                 int doorPosInRoom = northDoors[j] - rooms[i].position.x;
                 if (doorPosInRoom < 0)
-                    anomalies.Add($"Room {i} north door {j} has a negative position. Door offset: {doorPosInRoom} Wall length: {rooms[i].size.x}\n\n");
+                    anomalies.Add($"Room {i} north door {j} has a negative position. Door offset: {doorPosInRoom} Wall length: {rooms[i].size.x}\n" +
+                                  $"Parent division type: {parentDivisionType}, Grandparent division type: {grandParentDivisionType}.\n\n");
             }
             
             List<int> southDoors = rooms[i].southDoors;
@@ -126,7 +146,8 @@ public class GenerationTest
             {
                 int doorPosInRoom = southDoors[j] - rooms[i].position.x;
                 if (doorPosInRoom < 0)
-                    anomalies.Add($"Room {i} south door {j} has a negative position. Door offset: {doorPosInRoom} Wall length: {rooms[i].size.x}\n\n");
+                    anomalies.Add($"Room {i} south door {j} has a negative position. Door offset: {doorPosInRoom} Wall length: {rooms[i].size.x}\n" +
+                                  $"Parent division type: {parentDivisionType}, Grandparent division type: {grandParentDivisionType}.\n\n");
             }
         }
         
@@ -159,8 +180,11 @@ public class GenerationTest
 
         for (int i = 0; i < Main.instance.GetDungeonGenerator().rooms.Count; i++)
         {
-            Wall[] iSectionWalls = Main.instance.GetDungeonGenerator().rooms[i]
-                .GetWalls(minimumMutators.doorHeight, minimumMutators.doorWidth);
+            Section section = Main.instance.GetDungeonGenerator().rooms[i];
+            Wall[] iSectionWalls = section.GetWalls(minimumMutators.doorHeight, minimumMutators.doorWidth);
+            
+            string parentDivisionType = section.parent.divisionType.ToString();
+            string grandParentDivisionType = section.parent.parent.divisionType.ToString();
 
             for (int k = 0; k < iSectionWalls.Length; k++)
             {
@@ -169,11 +193,13 @@ public class GenerationTest
 
                 if (wall1Start == wall1End)
                 {
-                    anomalies.Add($"Room: {i}, Wall: {k} has a length of 0. {wall1Start}. \n\n");
+                    anomalies.Add($"Room: {i}, Wall: {k} has a length of 0. {wall1Start}. \n" +
+                                  $"Parent division type: {parentDivisionType}, Grandparent division type: {grandParentDivisionType}.\n\n");
                 }
                 else if (iSectionWalls[k].size.x < 0 || iSectionWalls[k].size.z < 0)
                 {
-                    anomalies.Add($"Room: {i}, Wall: {k} has a negative size. {wall1Start}.\n\n");
+                    anomalies.Add($"Room: {i}, Wall: {k} has a negative size. {wall1Start}.\n" +
+                                  $"Parent division type: {parentDivisionType}, Grandparent division type: {grandParentDivisionType}.\n\n");
                 }
             }
         }

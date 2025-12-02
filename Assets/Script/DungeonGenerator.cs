@@ -2,6 +2,10 @@ using System;
 using UnityEngine;
 using System.Collections.Generic;
 using Random = UnityEngine.Random;
+using static Sections;
+using static Directions;
+using static Walls;
+using static Doors;
 
 
 public class DungeonGenerator : MonoBehaviour
@@ -19,295 +23,6 @@ public class DungeonGenerator : MonoBehaviour
         public int floorThickness;
         public float entropyThreshold;
         public float macroThreshold;
-    }
-    
-    public enum Direction
-    {
-        North,
-        South,
-        West,
-        East
-    }
-    
-    public static bool DirectionIsVertical(Direction direction)
-    {
-        return direction == Direction.North || direction == Direction.South;
-    }
-
-    public struct Door
-    {
-        public Vector3Int position;
-        public Vector3Int size;
-    }
-
-    public struct SectionBounds
-    {
-        public SectionBounds(Vector3Int position, Vector3Int size)
-        {
-            maxX = position.x + size.x;
-            maxZ = position.z + size.z;
-            minX = position.x;
-            minZ = position.z;
-            YPos = position.y;
-            height = size.y;
-        }
-
-        public SectionBounds(int yPos, int height)
-        {
-            maxX = 0;
-            maxZ = 0;
-            minX = 0;
-            minZ = 0;
-            this.YPos = yPos;
-            this.height = height;
-        }
-        
-        public int maxX;
-        public int maxZ;
-        public int minX;
-        public int minZ;
-        public int YPos;
-        public int height;
-
-        public Vector3Int GetPosition()
-        {
-            return new Vector3Int(minX, YPos, minZ);
-        }
-        
-        public Vector3Int GetSize()
-        {
-            return new Vector3Int(maxX - minX, height, maxZ - minZ);
-        }
-    }
-
-    public struct Space
-    {
-        public int width;
-        public int depth;
-
-        public Space(SectionBounds bounds, Direction direction)
-        {
-            if (DirectionIsVertical(direction))
-            {
-                width = bounds.GetSize().x;
-                depth = bounds.GetSize().z;
-            }
-            else
-            {
-                width = bounds.GetSize().z;
-                depth = bounds.GetSize().x;
-            }
-        }
-
-        public SectionBounds GetBounds(Direction direction, Vector3Int position, int height)
-        {
-            if (DirectionIsVertical(direction))
-                return new SectionBounds(position, new Vector3Int(width, height, depth));
-            else
-                return new SectionBounds(position, new Vector3Int(depth, height, width));
-        }
-    }
-
-    public struct Wall
-    {
-        public Vector3Int position;
-        public Vector3Int size;
-        public Direction direction;
-
-        public Wall(Vector3Int position, Vector3Int size, Direction direction)
-        {
-            this.position = position;
-            this.size = size;
-            this.direction = direction;
-        }
-    }
-    
-    public class Section
-    {
-        public Section parent;
-        public Section leadingRoom;
-        public List<Section> children = new List<Section>();
-        public Vector3Int position;
-        public Vector3Int size;
-        public int startFloor;
-        public int endFloor;
-        public Direction direction;
-        public bool isRoom;
-        public bool isCorridor;
-        public int corridorOffset;
-        
-        public List<int> northDoors;
-        public List<int> southDoors;
-        public List<int> eastDoors;
-        public List<int> westDoors;
-
-        public Section()
-        {
-            this.position = Vector3Int.zero;
-            this.size = Vector3Int.zero;
-            this.startFloor = 0;
-            this.endFloor = 0;
-            this.direction = Direction.North;
-            this.isRoom = false;
-            this.isCorridor = false;
-            this.parent = null;
-            
-            northDoors = new List<int>();
-            southDoors = new List<int>();
-            eastDoors = new List<int>();
-            westDoors = new List<int>();
-        }
-        
-        public Section(Section other, bool copyCorridorOffset = false, bool copyParent = true, bool copyChildren = false)
-        {
-            this.position = other.position;
-            this.size = other.size;
-            this.startFloor = other.startFloor;
-            this.endFloor = other.endFloor;
-            this.direction = other.direction;
-            this.isRoom = other.isRoom;
-            this.isCorridor = other.isCorridor;
-            this.children = copyChildren ? new List<Section>(other.children) : new List<Section>();
-            this.parent = copyParent ? other.parent : null;
-            this.corridorOffset = copyCorridorOffset ? other.corridorOffset : 0;
-            
-            northDoors = new List<int>();
-            southDoors = new List<int>();
-            eastDoors = new List<int>();
-            westDoors = new List<int>();
-        }
-        
-        public bool IntersectsFloor(int floor)
-        {
-            return floor >= startFloor && floor <= endFloor;
-        }
-        
-        public bool CheckSectionCanBeDivide(int minimumSectionSize)
-        {
-            if (size.x > minimumSectionSize && size.z > minimumSectionSize)
-            {
-                return true;
-            }
-            return false;
-        }
-
-        public Wall[] GetWalls(int doorHeight, int doorWidth)
-        {
-            // Calculate total wall count: 4 base walls + 2 additional segments per door
-            int wallCount = 4 + northDoors.Count * 2 + southDoors.Count * 2 + eastDoors.Count * 2 + westDoors.Count * 2;
-            Wall[] walls = new Wall[wallCount];
-            
-            northDoors.Sort();
-            southDoors.Sort();
-            eastDoors.Sort();
-            westDoors.Sort();
-            
-            int wallIndex = 0;
-            
-            // North wall
-            if (northDoors.Count > 0)
-            {
-                // Start wall from left edge to first door
-                Vector3Int pos = position + new Vector3Int(0, 0, size.z);
-                Vector3Int currentPos = pos + new Vector3Int(northDoors[0] - position.x, size.y, 0);
-                walls[wallIndex++] = new Wall(pos, currentPos - pos, Direction.South);
-                
-                // Process each door
-                for (int i = 0; i < northDoors.Count; i++)
-                {
-                    // Add wall segment above door
-                    Vector3Int doorWallPos = pos + new Vector3Int(northDoors[i] - position.x, doorHeight, 0);
-                    Vector3Int doorWallSize = new Vector3Int(doorWidth, size.y - doorHeight, 0);
-                    walls[wallIndex++] = new Wall(doorWallPos, doorWallSize, Direction.South);
-                    
-                    // Add wall segment to next door or end
-                    int nextX = (i + 1 < northDoors.Count) ? northDoors[i + 1] - position.x : size.x;
-                    Vector3Int wallStart = pos + new Vector3Int(northDoors[i] - position.x + doorWidth, 0, 0);
-                    Vector3Int wallEnd = pos + new Vector3Int(nextX, size.y, 0);
-                    walls[wallIndex++] = new Wall(wallStart, wallEnd - wallStart, Direction.South);
-                }
-            }
-            else
-            {
-                // Single wall segment if no doors
-                Vector3Int pos = position + new Vector3Int(0, 0, size.z);
-                walls[wallIndex++] = new Wall(pos, new Vector3Int(size.x, size.y, 0), Direction.South);
-            }
-
-            // South wall
-            if (southDoors.Count > 0)
-            {
-                Vector3Int pos = position;
-                Vector3Int currentPos = pos + new Vector3Int(southDoors[0] - position.x, size.y, 0);
-                walls[wallIndex++] = new Wall(pos, currentPos - pos, Direction.North);
-                
-                for (int i = 0; i < southDoors.Count; i++)
-                {
-                    Vector3Int doorWallPos = pos + new Vector3Int(southDoors[i] - position.x, doorHeight, 0);
-                    Vector3Int doorWallSize = new Vector3Int(doorWidth, size.y - doorHeight, 0);
-                    walls[wallIndex++] = new Wall(doorWallPos, doorWallSize, Direction.North);
-                    
-                    int nextX = (i + 1 < southDoors.Count) ? southDoors[i + 1] - position.x : size.x;
-                    Vector3Int wallStart = pos + new Vector3Int(southDoors[i] - position.x + doorWidth, 0, 0);
-                    Vector3Int wallEnd = pos + new Vector3Int(nextX, size.y, 0);
-                    walls[wallIndex++] = new Wall(wallStart, wallEnd - wallStart, Direction.North);
-                }
-            }
-            else
-            {
-                walls[wallIndex++] = new Wall(position, new Vector3Int(size.x, size.y, 0), Direction.North);
-            }
-
-            // East wall
-            if (eastDoors.Count > 0)
-            {
-                Vector3Int pos = position + new Vector3Int(size.x, 0, 0);
-                Vector3Int currentPos = pos + new Vector3Int(0, size.y, eastDoors[0] - position.z);
-                walls[wallIndex++] = new Wall(pos, currentPos - pos, Direction.West);
-                
-                for (int i = 0; i < eastDoors.Count; i++)
-                {
-                    Vector3Int doorWallPos = pos + new Vector3Int(0, doorHeight, eastDoors[i] - position.z);
-                    Vector3Int doorWallSize = new Vector3Int(0, size.y - doorHeight, doorWidth);
-                    walls[wallIndex++] = new Wall(doorWallPos, doorWallSize, Direction.West);
-                    
-                    int nextZ = (i + 1 < eastDoors.Count) ? eastDoors[i + 1] - position.z : size.z;
-                    Vector3Int wallStart = pos + new Vector3Int(0, 0, eastDoors[i] - position.z + doorWidth);
-                    Vector3Int wallEnd = pos + new Vector3Int(0, size.y, nextZ);
-                    walls[wallIndex++] = new Wall(wallStart, wallEnd - wallStart, Direction.West);
-                }
-            }
-            else
-            {
-                walls[wallIndex++] = new Wall(position + new Vector3Int(size.x, 0, 0), new Vector3Int(0, size.y, size.z), Direction.West);
-            }
-
-            // West wall
-            if (westDoors.Count > 0)
-            {
-                Vector3Int pos = position;
-                Vector3Int currentPos = pos + new Vector3Int(0, size.y, westDoors[0] - position.z);
-                walls[wallIndex++] = new Wall(pos, currentPos - pos, Direction.East);
-                
-                for (int i = 0; i < westDoors.Count; i++)
-                {
-                    Vector3Int doorWallPos = pos + new Vector3Int(0, doorHeight, westDoors[i] - position.z);
-                    Vector3Int doorWallSize = new Vector3Int(0, size.y - doorHeight, doorWidth);
-                    walls[wallIndex++] = new Wall(doorWallPos, doorWallSize, Direction.East);
-                    
-                    int nextZ = (i + 1 < westDoors.Count) ? westDoors[i + 1] - position.z : size.z;
-                    Vector3Int wallStart = pos + new Vector3Int(0, 0, westDoors[i] - position.z + doorWidth);
-                    Vector3Int wallEnd = pos + new Vector3Int(0, size.y, nextZ);
-                    walls[wallIndex++] = new Wall(wallStart, wallEnd - wallStart, Direction.East);
-                }
-            }
-            else
-            {
-                walls[wallIndex++] = new Wall(position, new Vector3Int(0, size.y, size.z), Direction.East);
-            }
-
-            return walls;
-        }
     }
 
     private static UInt64 calls = 0;
@@ -344,7 +59,7 @@ public class DungeonGenerator : MonoBehaviour
         {
             if (i == 0)
                 Debug.Log("Room 1: " + rooms[i].corridorOffset + " " + rooms[i].isCorridor);
-            Door door = CreateDoor(rooms[i]);
+            Door door = CreateDoor(rooms[i], minimums);
             doors.Add(door);
             AddDoorToRoom(rooms[i], door);
         }
@@ -399,97 +114,10 @@ public class DungeonGenerator : MonoBehaviour
             return section;
         }
     }
-    
-    private Door CreateDoor(Section section)
-    {
-        int wallThickness = minimums.wallThickness;
-        int doorOffset = CorridorOffsetToDoorOffset(section.corridorOffset);
-
-        Door door = new Door();
-        switch (section.direction)
-        {
-            case Direction.South:
-                door = new Door()
-                {
-                    position =  new Vector3Int(section.corridorOffset == 0 ? 
-                            section.position.x + section.size.x / 2 - minimums.doorWidth / 2 : 
-                            section.position.x + doorOffset, 
-                            section.position.y, section.position.z + section.size.z),
-                    size = new Vector3Int(minimums.doorWidth, minimums.floorHeight, wallThickness)
-                };
-                break;
-            case Direction.North:
-                door = new Door()
-                {
-                    position = new Vector3Int(section.corridorOffset == 0 ?
-                        section.position.x + section.size.x / 2 - minimums.doorWidth / 2 :
-                        section.position.x + doorOffset,
-                        section.position.y, section.position.z - wallThickness),
-                    size = new Vector3Int(minimums.doorWidth, minimums.floorHeight, wallThickness)
-                };
-                break;
-            case Direction.East:
-                door = new Door()
-                {
-                    position = new Vector3Int(section.position.x - wallThickness, section.position.y, 
-                        section.corridorOffset == 0 ? section.position.z + section.size.z / 2 - minimums.doorWidth / 2 :
-                            section.position.z + doorOffset),
-                    size = new Vector3Int(wallThickness, minimums.floorHeight, minimums.doorWidth)
-                };
-                break;
-            case Direction.West:
-                door = new Door()
-                {
-                    position = new Vector3Int(section.position.x + section.size.x, section.position.y,
-                        section.corridorOffset == 0 ? section.position.z + section.size.z / 2 - minimums.doorWidth / 2 :
-                            section.position.z + doorOffset),
-                    size = new Vector3Int(wallThickness, minimums.floorHeight, minimums.doorWidth)
-                };
-                break;
-            default:
-                door = new Door();
-                break;
-        }
-
-        return door;
-    }
-
-    private Direction ClockWise(Direction direction)
-    {
-        switch (direction)
-        {
-            case Direction.North:
-                return Direction.East;
-            case Direction.East:
-                return Direction.South;
-            case Direction.South:
-                return Direction.West;
-            case Direction.West:
-                return Direction.North;
-            default:
-                return direction;
-        }
-    }
-
-    private Direction CounterClockWise(Direction direction)
-    {
-        switch (direction)
-        {
-            case Direction.North:
-                return Direction.West;
-            case Direction.West:
-                return Direction.South;
-            case Direction.South:
-                return Direction.East;
-            case Direction.East:
-                return Direction.North;
-            default:
-                return direction;
-        }
-    }
 
     private Section BroomDivide(Section section, float entropy = 0)
     {
+        section.divisionType = DivisionType.Broom;
         Section corridorSection = new Section(section, true);
         corridorSection.parent = section;
         corridorSection.isCorridor = true;
@@ -498,7 +126,7 @@ public class DungeonGenerator : MonoBehaviour
         broomSection.parent = section;
         
         SectionBounds parentBounds = new SectionBounds(section.position, section.size);
-        Space space = new Space(parentBounds, section.direction);
+        Sections.Space space = new Sections.Space(parentBounds, section.direction);
         int corridorAndWall = minimums.corridorSize + minimums.wallThickness;
         int broomAndWall = space.depth - minimums.corridorSize;
         // TODO Fix this
@@ -540,8 +168,9 @@ public class DungeonGenerator : MonoBehaviour
  
     private Section BufferDivide(Section section, float entropy = 0)
     {
+        section.divisionType = DivisionType.Buffer;
         SectionBounds parentBounds = new SectionBounds(section.position, section.size);
-        Space space = new Space(parentBounds, section.direction);
+        Sections.Space space = new Sections.Space(parentBounds, section.direction);
         int subDivisions = WideSubDiv(space, entropy);
         List<SectionBounds> subSections = new List<SectionBounds>();
         
@@ -581,7 +210,7 @@ public class DungeonGenerator : MonoBehaviour
         return section;
     }
 
-    private int WideSubDiv(Space space, float entropy = 0)
+    private int WideSubDiv(Sections.Space space, float entropy = 0)
     {
         int maxSubDiv = (space.width + minimums.wallThickness) / (minimums.roomSize + minimums.wallThickness);
         int subDivByDepth = Mathf.Min(maxSubDiv, space.width / (space.depth + minimums.wallThickness));
@@ -598,7 +227,8 @@ public class DungeonGenerator : MonoBehaviour
     }
     
     private Section ThreeSectionDivide(Section section, float entropy)
-    { 
+    {
+        section.divisionType = DivisionType.ThreeSection;
         SectionBounds parentBounds = new SectionBounds(section.position, section.size);
         SectionBounds corridorBounds = new SectionBounds(parentBounds.YPos, parentBounds.height);
         SectionBounds rightBounds = new SectionBounds(parentBounds.YPos, parentBounds.height);
@@ -773,7 +403,7 @@ public class DungeonGenerator : MonoBehaviour
         rightSection.direction = isVertical ? ClockWise(section.direction) : CounterClockWise(section.direction);
         rightSection.leadingRoom = corridorSection;
         
-        Space rightSpace = new Space(rightBounds, rightSection.direction);
+        Sections.Space rightSpace = new Sections.Space(rightBounds, rightSection.direction);
         if(rightSpace.width > 2 * rightSpace.depth + minimums.wallThickness && rightSpace.depth > minimums.roomSize && bufferSides)
         {
             rightSection = BufferDivide(rightSection);
@@ -791,7 +421,7 @@ public class DungeonGenerator : MonoBehaviour
         leftSection.direction = isVertical ? CounterClockWise(section.direction) : ClockWise(section.direction);
         leftSection.leadingRoom = corridorSection;
         
-        Space leftSpace = new Space(leftBounds, leftSection.direction);
+        Sections.Space leftSpace = new Sections.Space(leftBounds, leftSection.direction);
         if(leftSpace.width > 2 * leftSpace.depth + minimums.wallThickness && leftSpace.depth > minimums.roomSize && bufferSides)
         {
             leftSection = BufferDivide(leftSection);
@@ -812,7 +442,7 @@ public class DungeonGenerator : MonoBehaviour
             endSection.corridorOffset = corridorOffset;
             endSection.leadingRoom = corridorSection;
             
-            Space endSpace = new Space(endBounds, endSection.direction);
+            Sections.Space endSpace = new Sections.Space(endBounds, endSection.direction);
             if(endSpace.width > 2 * endSpace.depth + minimums.wallThickness && endSpace.depth > 
                minimums.corridorSize + minimums.wallThickness + minimums.roomSize && broomEnd)
             {
@@ -832,6 +462,7 @@ public class DungeonGenerator : MonoBehaviour
 
     private Section CrossMacroDivide(Section section)
     {
+        section.divisionType = DivisionType.Macro;
         bool isVertical = DirectionIsVertical(section.direction);
         bool isOffset = section.corridorOffset != 0;
         
@@ -1082,6 +713,7 @@ public class DungeonGenerator : MonoBehaviour
 
     Section BufferQuadrant(Section section, Direction primaryDir, Direction secondaryDir, Section primaryLead, Section secondaryLead)
     {
+        section.divisionType = DivisionType.BufferedQuad;
         Section mainSection = new Section(section);
         mainSection.direction = primaryDir;
         mainSection.parent = section;
@@ -1383,17 +1015,6 @@ public class DungeonGenerator : MonoBehaviour
         return Mathf.RoundToInt(Mathf.Lerp(setPos, randPos, entropy));
     }
     
-    private int DoorOffsetToCorridorOffset(int doorOffset)
-    {
-        int difference = (minimums.corridorSize - minimums.doorWidth) / 2;
-        return doorOffset - difference;
-    }
-
-    private int CorridorOffsetToDoorOffset(int corridorOffset)
-    {
-        int difference = (minimums.corridorSize - minimums.doorWidth) / 2;
-        return corridorOffset + difference;
-    }
 
     private bool LowEntropyRoll(float entropy)
     {
@@ -1414,40 +1035,6 @@ public class DungeonGenerator : MonoBehaviour
     {
         int min = Mathf.Min(section.size.x, section.size.z);
         return min > minimums.macroThreshold;
-    }
-
-    private void AddDoorToRoom(Section room, Door door)
-    {
-        if (DirectionIsVertical(room.direction))
-        {
-            if (room.direction == Direction.North)
-            {
-                room.southDoors.Add(door.position.x);;
-                if (room.leadingRoom != null)
-                    room.leadingRoom.northDoors.Add(door.position.x);
-            }
-            else
-            {
-                room.northDoors.Add(door.position.x);
-                if (room.leadingRoom != null)
-                    room.leadingRoom.southDoors.Add(door.position.x);
-            }
-        }
-        else
-        {
-            if (room.direction == Direction.East)
-            {
-                room.westDoors.Add(door.position.z);
-                if (room.leadingRoom != null)
-                    room.leadingRoom.eastDoors.Add(door.position.z);
-            }
-            else
-            {
-                room.eastDoors.Add(door.position.z);
-                if (room.leadingRoom != null)
-                    room.leadingRoom.westDoors.Add(door.position.z);
-            }
-        }
     }
 
 }

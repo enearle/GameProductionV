@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 using static DungeonGenerator;
+using static Directions;
+using static Walls;
 
 public class Main : MonoBehaviour
 {
@@ -10,7 +12,7 @@ public class Main : MonoBehaviour
     [SerializeField] private Material floorMaterial;
     [SerializeField] private Material wallMaterial;
     [SerializeField] private int seed = 0;
-    [SerializeField] private DungeonGenerator.Direction startDirection = DungeonGenerator.Direction.North;
+    [SerializeField] private Direction startDirection = Direction.North;
     [SerializeField] private GameObject meshLayerPrefab;
     
     // For testing /////////////////////////////////////////////////////////////////////////////////////////////////////
