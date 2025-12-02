@@ -35,12 +35,26 @@ public class GenerationTest
         Vector3Int wallOffset = new Vector3Int(minimumMutators.wallThickness, 0, minimumMutators.wallThickness);
         HashSet<string> anomalies = new HashSet<string>();
         
+        Section mainSection = Main.instance.GetDungeonGenerator().floors[0];
         List<Section> rooms = Main.instance.GetDungeonGenerator().rooms;
         
         for (int i =0; i < rooms.Count; i++)
         {
-            string parentDivisionType = rooms[i].parent.divisionType.ToString();
-            string grandParentDivisionType = rooms[i].parent.parent.divisionType.ToString();
+            string parentDivisionType = "null";
+            string grandParentDivisionType = "null";
+            if (rooms[i].parent == null && i != 0)
+                anomalies.Add($"Section {i} has no parent.\n");
+            else if(i != 0)
+            {
+                parentDivisionType = rooms[i].parent.divisionType.ToString();
+                if (rooms[i].parent != mainSection)
+                {
+                    if (rooms[i].parent.parent == null)
+                        anomalies.Add($"Section {i} has no grandparent and parent is not main section.\n");
+                    else
+                        grandParentDivisionType = rooms[i].parent.parent.divisionType.ToString();
+                }
+            }
             
             List<int> eastDoors = rooms[i].eastDoors;
             for (int j = 0; j < eastDoors.Count; j++)
@@ -108,11 +122,25 @@ public class GenerationTest
         HashSet<string> anomalies = new HashSet<string>();
         
         List<Section> rooms = Main.instance.GetDungeonGenerator().rooms;
+        Section mainSection = Main.instance.GetDungeonGenerator().floors[0];
         
         for (int i =0; i < rooms.Count; i++)
         {
-            string parentDivisionType = rooms[i].parent.divisionType.ToString();
-            string grandParentDivisionType = rooms[i].parent.parent.divisionType.ToString();
+            string parentDivisionType = "null";
+            string grandParentDivisionType = "null";
+            if (rooms[i].parent == null && i != 0)
+                anomalies.Add($"Section {i} has no parent.\n");
+            else if(i != 0)
+            {
+                parentDivisionType = rooms[i].parent.divisionType.ToString();
+                if (rooms[i].parent != mainSection)
+                {
+                    if (rooms[i].parent.parent == null)
+                        anomalies.Add($"Section {i} has no grandparent and parent is not main section.\n");
+                    else
+                        grandParentDivisionType = rooms[i].parent.parent.divisionType.ToString();
+                }
+            }
             
             List<int> eastDoors = rooms[i].eastDoors;
             for (int j = 0; j < eastDoors.Count; j++)
@@ -177,14 +205,31 @@ public class GenerationTest
     {
         MinimumMutators minimumMutators = Main.instance.GetMinimumMutators();
         HashSet<string> anomalies = new HashSet<string>();
+        
+        List<Section> rooms = Main.instance.GetDungeonGenerator().rooms;
+        Section mainSection = Main.instance.GetDungeonGenerator().floors[0];
 
         for (int i = 0; i < Main.instance.GetDungeonGenerator().rooms.Count; i++)
         {
+            
             Section section = Main.instance.GetDungeonGenerator().rooms[i];
             Wall[] iSectionWalls = section.GetWalls(minimumMutators.doorHeight, minimumMutators.doorWidth);
             
-            string parentDivisionType = section.parent.divisionType.ToString();
-            string grandParentDivisionType = section.parent.parent.divisionType.ToString();
+            string parentDivisionType = "null";
+            string grandParentDivisionType = "null";
+            if (rooms[i].parent == null && i != 0)
+                anomalies.Add($"Section {i} has no parent.\n");
+            else if(i != 0)
+            {
+                parentDivisionType = rooms[i].parent.divisionType.ToString();
+                if (rooms[i].parent != mainSection)
+                {
+                    if (rooms[i].parent.parent == null)
+                        anomalies.Add($"Section {i} has no grandparent and parent is not main section.\n");
+                    else
+                        grandParentDivisionType = rooms[i].parent.parent.divisionType.ToString();
+                }
+            }
 
             for (int k = 0; k < iSectionWalls.Length; k++)
             {

@@ -201,6 +201,7 @@ public class DungeonGenerator : MonoBehaviour
         foreach (SectionBounds bounds in subSections)
         {
             Section subSection = new Section(section);
+            subSection.parent = section;
             subSection.position = bounds.GetPosition();
             subSection.size = bounds.GetSize();
             subSection.leadingRoom = section.leadingRoom;
@@ -377,10 +378,9 @@ public class DungeonGenerator : MonoBehaviour
             }
         }
         
-        // TODO Remove this /////////////////////////////////////////////
+        // TODO Replace this with entropic rng /////////////////////////////////////////////
         bool bufferSides = true;
         bool broomEnd = true;
-        /////////////////////////////////////////////////////////////////
         
         Section corridorSection = new Section();
         corridorSection.parent = section;
@@ -477,12 +477,6 @@ public class DungeonGenerator : MonoBehaviour
         Section bottomLeftQuadrant = new Section(section);
         Section bottomRightQuadrant = new Section(section);
         mainCorridor.parent = section;
-        corridorA.parent = section;
-        corridorB.parent = section;
-        topLeftQuadrant.parent = section;
-        topRightQuadrant.parent = section;
-        bottomLeftQuadrant.parent = section;
-        bottomRightQuadrant.parent = section;
         
         if(isVertical)
         {
@@ -670,6 +664,13 @@ public class DungeonGenerator : MonoBehaviour
             corridorA = topCorridor;
             corridorB = bottomCorridor;
         }
+        
+        corridorA.parent = section;
+        corridorB.parent = section;
+        topLeftQuadrant.parent = section;
+        topRightQuadrant.parent = section;
+        bottomLeftQuadrant.parent = section;
+        bottomRightQuadrant.parent = section;
         
         topLeftQuadrant = RandomBool() 
             ? BufferQuadrant(topLeftQuadrant, Direction.North, Direction.West, corridorA, mainCorridor)
