@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Assertions;
 using static Sections;
 using static Directions;
 
@@ -71,30 +72,46 @@ public class Doors
         {
             if (room.direction == Direction.North)
             {
-                room.southDoors.Add(door.position.x);;
-                if (room.leadingRoom != null)
-                    room.leadingRoom.northDoors.Add(door.position.x);
+                int doorX = door.position.x;
+                if (doorX >= room.position.x && doorX + door.size.x <= room.position.x + room.size.x)
+                {
+                    room.southDoors.Add(doorX);
+                    if (room.leadingRoom != null)
+                        room.leadingRoom.northDoors.Add(doorX);
+                }
             }
             else
             {
-                room.northDoors.Add(door.position.x);
-                if (room.leadingRoom != null)
-                    room.leadingRoom.southDoors.Add(door.position.x);
+                int doorX = door.position.x;
+                if (doorX >= room.position.x && doorX + door.size.x <= room.position.x + room.size.x)
+                {
+                    room.northDoors.Add(doorX);
+                    if (room.leadingRoom != null)
+                        room.leadingRoom.southDoors.Add(doorX);
+                }
             }
         }
         else
         {
             if (room.direction == Direction.East)
             {
-                room.westDoors.Add(door.position.z);
-                if (room.leadingRoom != null)
-                    room.leadingRoom.eastDoors.Add(door.position.z);
+                int doorZ = door.position.z;
+                if (doorZ >= room.position.z && doorZ + door.size.z <= room.position.z + room.size.z)
+                {
+                    room.westDoors.Add(doorZ);
+                    if (room.leadingRoom != null)
+                        room.leadingRoom.eastDoors.Add(doorZ);
+                }
             }
             else
             {
-                room.eastDoors.Add(door.position.z);
-                if (room.leadingRoom != null)
-                    room.leadingRoom.westDoors.Add(door.position.z);
+                int doorZ = door.position.z;
+                if (doorZ >= room.position.z && doorZ + door.size.z <= room.position.z + room.size.z)
+                {
+                    room.eastDoors.Add(doorZ);
+                    if (room.leadingRoom != null)
+                        room.leadingRoom.westDoors.Add(doorZ);
+                }
             }
         }
     }

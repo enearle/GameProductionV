@@ -667,6 +667,9 @@ public class DungeonGenerator : MonoBehaviour
         
         corridorA.parent = section;
         corridorB.parent = section;
+        corridorA.isMacroSideCorridor = true;
+        corridorB.isMacroSideCorridor = true;
+        mainCorridor.isMacroMainCorridor = true;
         topLeftQuadrant.parent = section;
         topRightQuadrant.parent = section;
         bottomLeftQuadrant.parent = section;

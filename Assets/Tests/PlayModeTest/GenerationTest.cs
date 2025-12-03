@@ -8,6 +8,7 @@ using static DungeonGenerator;
 using static Sections;
 using static Directions;
 using static Walls;
+using static Doors;
 
 public class GenerationTest
 {
@@ -243,7 +244,7 @@ public class GenerationTest
                 }
                 else if (iSectionWalls[k].size.x < 0 || iSectionWalls[k].size.z < 0)
                 {
-                    anomalies.Add($"Room: {i}, Wall: {k} has a negative size. {wall1Start}.\n" +
+                    anomalies.Add($"Room: {i}, Wall: {k} has a negative size. {wall1End - wall1Start}.\n" +
                                   $"Parent division type: {parentDivisionType}, Grandparent division type: {grandParentDivisionType}.\n\n");
                 }
             }
@@ -335,8 +336,128 @@ public class GenerationTest
             return RangeContainsIntExclusive(line2Start.x, line1Start.x, line1End.x) && RangeContainsIntExclusive(line1Start.z, line2Start.z, line2End.z);
         }
     }
+
+    [UnityTest]
+    public IEnumerator MacroDivideTest()
+    {
+        yield return DefaultLoad();
+        
+        TestMacroDivide();
+    }
+
+    private void TestMacroDivide()
+    {
+        MinimumMutators minimumMutators = Main.instance.GetMinimumMutators();
+        HashSet<string> anomalies = new HashSet<string>();
+        
+        List<Section> rooms = Main.instance.GetDungeonGenerator().rooms;
+        Section mainSection = Main.instance.GetDungeonGenerator().floors[0];
+
+        for (int i = 0; i < Main.instance.GetDungeonGenerator().rooms.Count; i++)
+        {
+            
+            Section section = Main.instance.GetDungeonGenerator().rooms[i];
+            Wall[] iSectionWalls = section.GetWalls(minimumMutators.doorHeight, minimumMutators.doorWidth);
+            
+            string parentDivisionType = "null";
+            string grandParentDivisionType = "null";
+            if (rooms[i].parent == null && i != 0)
+                anomalies.Add($"Section {i} has no parent.\n");
+            else if(i != 0)
+            {
+                parentDivisionType = rooms[i].parent.divisionType.ToString();
+                if (rooms[i].parent != mainSection)
+                {
+                    if (rooms[i].parent.parent == null)
+                        anomalies.Add($"Section {i} has no grandparent and parent is not main section.\n");
+                    else
+                        grandParentDivisionType = rooms[i].parent.parent.divisionType.ToString();
+                }
+            }
+
+            for (int k = 0; k < iSectionWalls.Length; k++)
+            {
+                Vector3Int wall1Start = iSectionWalls[k].position;
+                Vector3Int wall1End = wall1Start + iSectionWalls[k].size;
+
+                if (wall1Start == wall1End)
+                {
+                    if (section.isCorridor)
+                        anomalies.Add($"|||||||||||| Room {i} is a corridor ||||||||||||\n");
+                    
+                    anomalies.Add($"\tRoom: {i}, Wall: {k} has a length of 0. {wall1Start}. \n" +
+                                  $"\tParent division type: {parentDivisionType}, Grandparent division type: {grandParentDivisionType}.\n");
+                }
+                else if (iSectionWalls[k].size.x < 0 || iSectionWalls[k].size.z < 0)
+                {
+                    if (section.isCorridor)
+                        anomalies.Add($"|||||||||||| Room {i} is a corridor ||||||||||||\n");
+                    
+                    anomalies.Add($"\tRoom: {i}, Wall: {k} has a negative size. {wall1End - wall1Start}.\n" +
+                                  $"\tParent division type: {parentDivisionType}, Grandparent division type: {grandParentDivisionType}.\n");
+                }
+            }
+        }
+
+        string p = "------------------------------------------------------------------------------------\n";        
+        Assert.IsTrue(anomalies.Count == 0,
+            p + $"\t\tMacro Divide Anomalies Found in Seed: {Main.instance.GetSeed()}\n" + p + '\n' +
+            string.Join("", anomalies));
+    }
+
+    [UnityTest]
+    public IEnumerator CorridorSizeTest()
+    {
+        yield return DefaultLoad();
+        
+        TestCorridorSize();
+    }
+
+    private void TestCorridorSize()
+    {
+        MinimumMutators minimumMutators = Main.instance.GetMinimumMutators();
+        HashSet<string> anomalies = new HashSet<string>();
+        
+        List<Section> rooms = Main.instance.GetDungeonGenerator().rooms;
+        Section mainSection = Main.instance.GetDungeonGenerator().floors[0];
+
+        for (int i = 0; i < rooms.Count; i++)
+        {
+            string parentDivisionType = "null";
+            string grandParentDivisionType = "null";
+            if (rooms[i].parent == null && i != 0)
+                anomalies.Add($"Section {i} has no parent.\n");
+            else if(i != 0)
+            {
+                parentDivisionType = rooms[i].parent.divisionType.ToString();
+                if (rooms[i].parent != mainSection)
+                {
+                    if (rooms[i].parent.parent == null)
+                        anomalies.Add($"Section {i} has no grandparent and parent is not main section.\n");
+                    else
+                        grandParentDivisionType = rooms[i].parent.parent.divisionType.ToString();
+                }
+            }
+            
+            if (rooms[i].isCorridor && (rooms[i].size.x < 0 || rooms[i].size.z < 0))
+                anomalies.Add($"Corridor {i} has a negative size. Size: {rooms[i].size}.\n" +
+                              $"Parent division type: {parentDivisionType}, Grandparent division type: {grandParentDivisionType}.\n");
+        }
+        
+        string p = "------------------------------------------------------------------------------------\n";        
+        Assert.IsTrue(anomalies.Count == 0,
+            p + $"\t\tCorridor Size Anomalies Found in Seed: {Main.instance.GetSeed()}\n" + p + '\n' +
+            string.Join("", anomalies));
+    }
     
-    bool RangeContainsIntExclusive(int value, int a, int b)
+    private Door? GetOffendingDoor(Vector3Int pos)
+    {
+        foreach (Door door in Main.instance.GetDungeonGenerator().doors)
+            if (door.position == pos) return door;
+        return null;
+    }
+
+    private bool RangeContainsIntExclusive(int value, int a, int b)
     {
         int min = Mathf.Min(a, b);
         int max = Mathf.Max(a, b);

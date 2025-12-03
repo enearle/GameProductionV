@@ -95,6 +95,8 @@ public static class Sections
         public Direction direction;
         public bool isRoom;
         public bool isCorridor;
+        public bool isMacroMainCorridor = false;
+        public bool isMacroSideCorridor = false;
         public int corridorOffset;
         public DivisionType divisionType = DivisionType.None;
         

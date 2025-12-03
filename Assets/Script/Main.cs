@@ -25,10 +25,15 @@ public class Main : MonoBehaviour
     public int GetSeed() => seed;
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private MeshLayer doorLayer;
-    private MeshLayer roomLayer;
-    private MeshLayer corridorLayer;
-    private MeshLayer wallLayer;
+    private MeshLayer doorFloorLayer;
+    private MeshLayer roomFloorLayer;
+    private MeshLayer corridorFloorLayer;
+    private MeshLayer macroMainFloorLayer;
+    private MeshLayer macroSideFloorLayer;
+    private MeshLayer corridorWallLayer;
+    private MeshLayer roomWallLayer;
+    private MeshLayer macroMainCorridor;
+    private MeshLayer macroSideCorridor;
     
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -41,18 +46,37 @@ public class Main : MonoBehaviour
             return;
         }
         
-        doorLayer = Instantiate(meshLayerPrefab).GetComponent<MeshLayer>();
-        roomLayer = Instantiate(meshLayerPrefab).GetComponent<MeshLayer>();
-        corridorLayer = Instantiate(meshLayerPrefab).GetComponent<MeshLayer>();
-        wallLayer = Instantiate(meshLayerPrefab).GetComponent<MeshLayer>();
+        doorFloorLayer = Instantiate(meshLayerPrefab).GetComponent<MeshLayer>();
+        doorFloorLayer.gameObject.name = "Door Floor Layer";
+        roomFloorLayer = Instantiate(meshLayerPrefab).GetComponent<MeshLayer>();
+        roomFloorLayer.gameObject.name = "Room Floor Layer";
+        corridorFloorLayer = Instantiate(meshLayerPrefab).GetComponent<MeshLayer>();
+        corridorFloorLayer.gameObject.name = "Corridor Floor Layer";
+        macroMainFloorLayer = Instantiate(meshLayerPrefab).GetComponent<MeshLayer>();
+        macroMainFloorLayer.gameObject.name = "Macro Main Floor";
+        macroSideFloorLayer = Instantiate(meshLayerPrefab).GetComponent<MeshLayer>();
+        macroSideFloorLayer.gameObject.name = "Macro Side Floor";
+        roomWallLayer = Instantiate(meshLayerPrefab).GetComponent<MeshLayer>();
+        roomWallLayer.gameObject.name = "Room Wall Layer";
+        corridorWallLayer = Instantiate(meshLayerPrefab).GetComponent<MeshLayer>();
+        corridorWallLayer.gameObject.name = "Corridor Wall Layer";
+        macroMainCorridor = Instantiate(meshLayerPrefab).GetComponent<MeshLayer>();
+        macroMainCorridor.gameObject.name = "Macro Main Corridor";
+        macroSideCorridor = Instantiate(meshLayerPrefab).GetComponent<MeshLayer>();
+        macroSideCorridor.gameObject.name = "Macro Side Corridor";
+        
         dungeonGenerator = gameObject.AddComponent<DungeonGenerator>();;
         dungeonGenerator.GenerateDungeon(size, minimumMutators, seed, startDirection);
         foreach (var section in dungeonGenerator.rooms)
         {
-            if (section.isCorridor)
-                corridorLayer.AddFloorGeometryToMesh(section.position, section.size, new Vector2(1,1), new Vector3(1,1,1));
+            if (section.isMacroMainCorridor)
+                macroMainFloorLayer.AddFloorGeometryToMesh(section.position, section.size, new Vector2(1,1), new Vector3(1,1,1));
+            else if (section.isMacroSideCorridor)
+                macroSideFloorLayer.AddFloorGeometryToMesh(section.position, section.size, new Vector2(1,1), new Vector3(1,1,1));
+            else if (section.isCorridor)
+                corridorFloorLayer.AddFloorGeometryToMesh(section.position, section.size, new Vector2(1,1), new Vector3(1,1,1));
             else
-                roomLayer.AddFloorGeometryToMesh(section.position, section.size, new Vector2(1,1), new Vector3(1,1,1));
+                roomFloorLayer.AddFloorGeometryToMesh(section.position, section.size, new Vector2(1,1), new Vector3(1,1,1));
             
             Wall[] walls = section.GetWalls(minimumMutators.doorHeight, minimumMutators.doorWidth);
 
@@ -60,23 +84,40 @@ public class Main : MonoBehaviour
             {
                 bool isVertical = DirectionIsVertical(wall.direction);
                 bool flip = isVertical && wall.direction == Direction.North || !isVertical && wall.direction == Direction.West;
-                    
-                wallLayer.AddWallGeometryToMesh(wall.position, wall.size,  new Vector2(1,1), new Vector3(1,1,1), isVertical, flip);
+                
+                if (section.isMacroMainCorridor)
+                    macroMainCorridor.AddWallGeometryToMesh(wall.position, wall.size, new Vector2(1,1), new Vector3(1,1,1), isVertical, flip);
+                else if (section.isMacroSideCorridor)
+                    macroSideCorridor.AddWallGeometryToMesh(wall.position, wall.size, new Vector2(1,1), new Vector3(1,1,1), isVertical, flip);
+                else if (section.isCorridor)
+                    corridorWallLayer.AddWallGeometryToMesh(wall.position, wall.size, new Vector2(1,1), new Vector3(1,1,1), isVertical, flip);
+                else
+                    roomWallLayer.AddWallGeometryToMesh(wall.position, wall.size,  new Vector2(1,1), new Vector3(1,1,1), isVertical, flip);
             }
         }
 
         foreach (var section in dungeonGenerator.doors)
         {
-            doorLayer.AddFloorGeometryToMesh(section.position, section.size, new Vector2(1,1), new Vector3(1,1,1));
+            doorFloorLayer.AddFloorGeometryToMesh(section.position, section.size, new Vector2(1,1), new Vector3(1,1,1));
         }
-        roomLayer.SetMaterial(floorMaterial);
-        corridorLayer.SetMaterial(floorMaterial);
-        doorLayer.SetMaterial(floorMaterial);
-        wallLayer.SetMaterial(wallMaterial);
-        corridorLayer.UpdateMesh();
-        roomLayer.UpdateMesh();
-        doorLayer.UpdateMesh();
-        wallLayer.UpdateMesh();
+        roomFloorLayer.SetMaterial(floorMaterial);
+        corridorFloorLayer.SetMaterial(floorMaterial);
+        macroMainFloorLayer.SetMaterial(floorMaterial);
+        macroSideFloorLayer.SetMaterial(floorMaterial);
+        doorFloorLayer.SetMaterial(floorMaterial);
+        roomWallLayer.SetMaterial(wallMaterial);
+        corridorWallLayer.SetMaterial(wallMaterial);
+        macroMainCorridor.SetMaterial(wallMaterial);
+        macroSideCorridor.SetMaterial(wallMaterial);
+        corridorFloorLayer.UpdateMesh();
+        macroMainFloorLayer.UpdateMesh();
+        macroSideFloorLayer.UpdateMesh();
+        roomFloorLayer.UpdateMesh();
+        doorFloorLayer.UpdateMesh();
+        roomWallLayer.UpdateMesh();
+        corridorWallLayer.UpdateMesh();
+        macroMainCorridor.UpdateMesh();
+        macroSideCorridor.UpdateMesh();
         generationCompleted = true;
     }
 }
