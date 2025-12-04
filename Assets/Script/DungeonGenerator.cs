@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using System.Collections.Generic;
+using NUnit.Framework;
 using Random = UnityEngine.Random;
 using static Sections;
 using static Directions;
@@ -45,6 +46,8 @@ public class DungeonGenerator : MonoBehaviour
         this.startDirection = startDirection;
         
         this.specs = specs;
+        Assert.IsTrue(ValidateSpecs(size));
+        
         minimumSectionSize = specs.roomSize * 2 + specs.corridorSize + specs.wallThickness * 2;
         zeroPoint = specs.roomSize * 2 + specs.wallThickness;
         maxPoint = Mathf.RoundToInt(Mathf.Lerp(zeroPoint, Math.Min(size.x, size.z), specs.entropyThreshold));
@@ -95,9 +98,7 @@ public class DungeonGenerator : MonoBehaviour
         bool finishEarly = LowEntropyRoll(entropy);
         bool canDivide = section.CheckSectionCanBeDivide(minimumSectionSize);
         if (section.regionIndex == -1 && specs.regions.Count > 0)
-        {
             section.RollToSetRegion(entropy, specs.regions);
-        }
         
         try
         {
@@ -683,7 +684,6 @@ public class DungeonGenerator : MonoBehaviour
         bottomLeftQuadrant.parent = section;
         bottomRightQuadrant.parent = section;
         
-        
         if (isVertical)
         {
             topLeftQuadrant = RandomBool()
@@ -1043,5 +1043,15 @@ public class DungeonGenerator : MonoBehaviour
         return min > specs.macroThreshold;
     }
 
-    
+    private bool ValidateSpecs(Vector3Int size)
+    {
+        bool corridorValid = specs.corridorSize > 0 && specs.corridorSize >= specs.doorWidth + 2;
+        bool roomValid = specs.roomSize > 0 && specs.roomSize >= specs.corridorSize;
+        bool wallValid = specs.wallThickness > 0;
+        bool thresholdValid = specs.macroThreshold > 0 && specs.macroThreshold <= size.x && specs.macroThreshold <= size.z;
+        bool sizeValid = size.x >= specs.roomSize + specs.wallThickness * 2 && size.z >= specs.roomSize + specs.wallThickness * 2 && size.y >= specs.floorHeight + specs.floorThickness;
+        bool floorValid = specs.floorHeight > 0 && specs.floorHeight > specs.doorHeight;
+
+        return corridorValid && roomValid && wallValid && thresholdValid && sizeValid && floorValid;
+    }
 }

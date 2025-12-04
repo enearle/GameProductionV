@@ -58,6 +58,48 @@ public class MeshLayer : MonoBehaviour
         uvs.AddRange(newUvs);
         normals.AddRange(newNormals);
     }
+    
+    public void AddCeilingGeometryToMesh(Vector3Int pos, Vector3Int size, Vector2 uvScale, Vector3 worldScale)
+    {
+        Vector3[] newVertices = new Vector3[4]
+        {
+            Vector3.Scale(pos, worldScale),
+            Vector3.Scale(pos + new Vector3(size.x, 0, 0), worldScale),
+            Vector3.Scale(pos + new Vector3(0, 0, size.z) , worldScale),
+            Vector3.Scale(pos + new Vector3(size.x, 0, size.z), worldScale)
+        };
+        
+        Vector3[] newNormals = new Vector3[4]
+        {
+            Vector3.up,
+            Vector3.up,
+            Vector3.up,
+            Vector3.up
+        };
+        
+        Vector2[] newUvs = new Vector2[4]
+        {
+            new Vector2(pos.x, pos.z),
+            Vector2.Scale(new Vector2(pos.x + size.x, pos.z), uvScale),
+            Vector2.Scale(new Vector2(pos.x, pos.z + size.z), uvScale),
+            Vector2.Scale(new Vector2(pos.x + size.x, pos.z + size.z), uvScale)
+        };
+        
+        int[] newTriangles = new int[6]
+        {
+            vertices.Count, 
+            vertices.Count + 1, 
+            vertices.Count + 2,
+            vertices.Count + 2, 
+            vertices.Count + 1, 
+            vertices.Count + 3
+        };
+        
+        vertices.AddRange(newVertices);
+        triangles.AddRange(newTriangles);
+        uvs.AddRange(newUvs);
+        normals.AddRange(newNormals);
+    }
 
     public void AddWallGeometryToMesh(Vector3Int pos, Vector3Int size, Vector2 uvScale, Vector3 worldScale,
         bool isXAxis, bool flipFace = false)

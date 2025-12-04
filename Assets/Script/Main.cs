@@ -4,8 +4,6 @@ using static DungeonGenerator;
 using static Directions;
 using static Walls;
 
-
-
 public class Main : MonoBehaviour
 {
     private DungeonGenerator dungeonGenerator;
@@ -58,6 +56,7 @@ public class Main : MonoBehaviour
 
     public void CreateDungeon()
     {
+        
         
     }
 

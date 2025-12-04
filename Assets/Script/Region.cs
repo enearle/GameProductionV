@@ -3,6 +3,8 @@ using UnityEngine;
 [System.Serializable]
 public struct Region
 {
+    public string name;
+    
     public Material roomWallMaterial;
     public Material roomFloorMaterial;
     public Material roomCeilingMaterial;
@@ -20,6 +22,7 @@ public struct Region
     
     public Region(float maxEntropy = 1.0f, float minEntropy = 0.0f)
     {
+        this.name = "";
         this.roomWallMaterial = null;
         this.roomFloorMaterial = null;
         this.roomCeilingMaterial = null;

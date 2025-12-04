@@ -17,7 +17,6 @@ public static class Helpers
         return value >= min && value <= max;
     }
     
-    
     public static float CalculateSectionEntropy(Section section, int zeroPoint, int maxPoint)
     {
         if (maxPoint < zeroPoint)
