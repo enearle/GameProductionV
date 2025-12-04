@@ -9,7 +9,7 @@ using static Walls;
 public class Main : MonoBehaviour
 {
     private DungeonGenerator dungeonGenerator;
-    [SerializeField] private DungeonGenerator.MinimumMutators minimumMutators;
+    [SerializeField] private DungeonGenerator.Specifications specifications;
     [SerializeField] private Vector3Int size;
     [SerializeField] private Material floorMaterial;
     [SerializeField] private Material wallMaterial;
@@ -23,7 +23,7 @@ public class Main : MonoBehaviour
     private bool generationCompleted = false;
     public bool GetGenerationCompleted() => generationCompleted;
     public DungeonGenerator GetDungeonGenerator() => dungeonGenerator;
-    public MinimumMutators GetMinimumMutators() => minimumMutators;
+    public Specifications GetSpecs() => specifications;
     
     public int GetSeed() => seed;
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -83,7 +83,8 @@ public class Main : MonoBehaviour
         macroSideCorridor.gameObject.name = "Macro Side Corridor";
         
         dungeonGenerator = gameObject.AddComponent<DungeonGenerator>();;
-        dungeonGenerator.GenerateDungeon(size, minimumMutators, seed, startDirection);
+        dungeonGenerator.GenerateDungeon(size, specifications, seed, startDirection);
+        Debug.Log($"Dungeon generated with {dungeonGenerator.rooms.Count} rooms.");
         foreach (var section in dungeonGenerator.rooms)
         {
             if (section.isMacroMainCorridor)
@@ -95,7 +96,7 @@ public class Main : MonoBehaviour
             else
                 roomFloorLayer.AddFloorGeometryToMesh(section.position, section.size, new Vector2(1,1), new Vector3(1,1,1));
             
-            Wall[] walls = section.GetWalls(minimumMutators.doorHeight, minimumMutators.doorWidth);
+            Wall[] walls = section.GetWalls(specifications.doorHeight, specifications.doorWidth);
 
             foreach (Wall wall in walls)
             {

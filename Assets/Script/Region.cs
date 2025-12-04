@@ -1,6 +1,7 @@
 using UnityEngine;
 
-public class Region
+[System.Serializable]
+public struct Region
 {
     public Material roomWallMaterial;
     public Material roomFloorMaterial;
@@ -13,6 +14,24 @@ public class Region
     public GameObject doorPrefab;
     public GameObject lightSconcePrefab;
     public GameObject lightCeilingPrefab;
+
+    public float maxEntropy;
+    public float minEntropy;
+    
+    public Region(float maxEntropy = 1.0f, float minEntropy = 0.0f)
+    {
+        this.roomWallMaterial = null;
+        this.roomFloorMaterial = null;
+        this.roomCeilingMaterial = null;
+        this.corridorWallMaterial = null;
+        this.corridorFloorMaterial = null;
+        this.corridorCeilingMaterial = null;
+        this.doorPrefab = null;
+        this.lightSconcePrefab = null;
+        this.lightCeilingPrefab = null;
+        this.maxEntropy = maxEntropy;
+        this.minEntropy = minEntropy;
+    }
 }
 
 

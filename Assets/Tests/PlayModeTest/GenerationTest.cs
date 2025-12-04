@@ -9,6 +9,7 @@ using static Sections;
 using static Directions;
 using static Walls;
 using static Doors;
+using static Helpers;
 
 public class GenerationTest
 {
@@ -32,8 +33,8 @@ public class GenerationTest
 
     private void TestDoorsToFarForward()
     {
-        MinimumMutators minimumMutators = Main.instance.GetMinimumMutators();
-        Vector3Int wallOffset = new Vector3Int(minimumMutators.wallThickness, 0, minimumMutators.wallThickness);
+        Specifications specifications = Main.instance.GetSpecs();
+        Vector3Int wallOffset = new Vector3Int(specifications.wallThickness, 0, specifications.wallThickness);
         HashSet<string> anomalies = new HashSet<string>();
         
         Section mainSection = Main.instance.GetDungeonGenerator().floors[0];
@@ -65,7 +66,7 @@ public class GenerationTest
                 if (doorPosInRoom > rooms[i].size.z)
                     anomalies.Add($"Room {i} east door {j} starts outside of room bounds. Door offset: {doorPosInRoom} Wall length: {rooms[i].size.z}\n" +
                                   $"Parent division type: {parentDivisionType}, Grandparent division type: {grandParentDivisionType}.\n\n");
-                else if (doorPosInRoom > rooms[i].size.z - minimumMutators.doorWidth)
+                else if (doorPosInRoom > rooms[i].size.z - specifications.doorWidth)
                     anomalies.Add($"Room {i} east door {j} ends outside of room bounds. Door offset: {doorPosInRoom} Wall length: {rooms[i].size.z}\n" +
                                   $"Parent division type: {parentDivisionType}, Grandparent division type: {grandParentDivisionType}.\n\n");
             }
@@ -78,7 +79,7 @@ public class GenerationTest
                 if (doorPosInRoom > rooms[i].size.z)
                     anomalies.Add($"Room {i} west door {j} starts outside of room bounds. Door offset: {doorPosInRoom} Wall length: {rooms[i].size.z}\n" +
                                   $"Parent division type: {parentDivisionType}, Grandparent division type: {grandParentDivisionType}.\n\n");
-                else if (doorPosInRoom > rooms[i].size.z - minimumMutators.doorWidth)
+                else if (doorPosInRoom > rooms[i].size.z - specifications.doorWidth)
                     anomalies.Add($"Room {i} west door {j} ends outside of room bounds. Door offset: {doorPosInRoom} Wall length: {rooms[i].size.z}\n" +
                                   $"Parent division type: {parentDivisionType}, Grandparent division type: {grandParentDivisionType}.\n\n");
             }
@@ -91,7 +92,7 @@ public class GenerationTest
                 if (doorPosInRoom > rooms[i].size.x)
                     anomalies.Add($"Room {i} north door {j} starts outside of room bounds. Door offset: {doorPosInRoom} Wall length: {rooms[i].size.x}\n" +
                                   $"Parent division type: {parentDivisionType}, Grandparent division type: {grandParentDivisionType}.\n\n");
-                else if (doorPosInRoom > rooms[i].size.x - minimumMutators.doorWidth)
+                else if (doorPosInRoom > rooms[i].size.x - specifications.doorWidth)
                     anomalies.Add($"Room {i} north door {j} ends outside of room bounds. Door offset: {doorPosInRoom} Wall length: {rooms[i].size.x}\n" +
                                   $"Parent division type: {parentDivisionType}, Grandparent division type: {grandParentDivisionType}.\n\n");
             }
@@ -104,7 +105,7 @@ public class GenerationTest
                 if (doorPosInRoom > rooms[i].size.x)
                     anomalies.Add($"Room {i} south door {j} starts outside of room bounds. Door offset: {doorPosInRoom} Wall length: {rooms[i].size.x}\n" +
                                   $"Parent division type: {parentDivisionType}, Grandparent division type: {grandParentDivisionType}.\n\n");
-                else if (doorPosInRoom > rooms[i].size.x - minimumMutators.doorWidth)
+                else if (doorPosInRoom > rooms[i].size.x - specifications.doorWidth)
                     anomalies.Add($"Room {i} south door {j} ends outside of room bounds. Door offset: {doorPosInRoom} Wall length: {rooms[i].size.x}\n" +
                                   $"Parent division type: {parentDivisionType}, Grandparent division type: {grandParentDivisionType}.\n\n");
             }
@@ -118,8 +119,8 @@ public class GenerationTest
     
     private void TestDoorsToFarBackward()
     {
-        MinimumMutators minimumMutators = Main.instance.GetMinimumMutators();
-        Vector3Int wallOffset = new Vector3Int(minimumMutators.wallThickness, 0, minimumMutators.wallThickness);
+        Specifications specifications = Main.instance.GetSpecs();
+        Vector3Int wallOffset = new Vector3Int(specifications.wallThickness, 0, specifications.wallThickness);
         HashSet<string> anomalies = new HashSet<string>();
         
         List<Section> rooms = Main.instance.GetDungeonGenerator().rooms;
@@ -204,7 +205,7 @@ public class GenerationTest
 
     private void TestWallsZeroLengthOrNegativeSize()
     {
-        MinimumMutators minimumMutators = Main.instance.GetMinimumMutators();
+        Specifications specifications = Main.instance.GetSpecs();
         HashSet<string> anomalies = new HashSet<string>();
         
         List<Section> rooms = Main.instance.GetDungeonGenerator().rooms;
@@ -214,7 +215,7 @@ public class GenerationTest
         {
             
             Section section = Main.instance.GetDungeonGenerator().rooms[i];
-            Wall[] iSectionWalls = section.GetWalls(minimumMutators.doorHeight, minimumMutators.doorWidth);
+            Wall[] iSectionWalls = section.GetWalls(specifications.doorHeight, specifications.doorWidth);
             
             string parentDivisionType = "null";
             string grandParentDivisionType = "null";
@@ -258,18 +259,18 @@ public class GenerationTest
     
     private void TestWallsOverlap()
     {
-        MinimumMutators minimumMutators = Main.instance.GetMinimumMutators();
+        Specifications specifications = Main.instance.GetSpecs();
         HashSet<string> anomalies = new HashSet<string>();
 
         for (int i = 0; i < Main.instance.GetDungeonGenerator().rooms.Count; i++)
         {
             Wall[] iSectionWalls = Main.instance.GetDungeonGenerator().rooms[i]
-                .GetWalls(minimumMutators.doorHeight, minimumMutators.doorWidth);
+                .GetWalls(specifications.doorHeight, specifications.doorWidth);
 
             for (int j = i + 1; j < Main.instance.GetDungeonGenerator().rooms.Count; j++)
             {
                 Wall[] jSectionWalls = Main.instance.GetDungeonGenerator().rooms[j]
-                    .GetWalls(minimumMutators.doorHeight, minimumMutators.doorWidth);
+                    .GetWalls(specifications.doorHeight, specifications.doorWidth);
 
                 for (int k = 0; k < iSectionWalls.Length; k++)
                 {
@@ -347,7 +348,7 @@ public class GenerationTest
 
     private void TestMacroDivide()
     {
-        MinimumMutators minimumMutators = Main.instance.GetMinimumMutators();
+        Specifications specifications = Main.instance.GetSpecs();
         HashSet<string> anomalies = new HashSet<string>();
         
         List<Section> rooms = Main.instance.GetDungeonGenerator().rooms;
@@ -357,7 +358,7 @@ public class GenerationTest
         {
             
             Section section = Main.instance.GetDungeonGenerator().rooms[i];
-            Wall[] iSectionWalls = section.GetWalls(minimumMutators.doorHeight, minimumMutators.doorWidth);
+            Wall[] iSectionWalls = section.GetWalls(specifications.doorHeight, specifications.doorWidth);
             
             string parentDivisionType = "null";
             string grandParentDivisionType = "null";
@@ -415,7 +416,7 @@ public class GenerationTest
 
     private void TestCorridorSize()
     {
-        MinimumMutators minimumMutators = Main.instance.GetMinimumMutators();
+        Specifications specifications = Main.instance.GetSpecs();
         HashSet<string> anomalies = new HashSet<string>();
         
         List<Section> rooms = Main.instance.GetDungeonGenerator().rooms;
@@ -455,13 +456,6 @@ public class GenerationTest
         foreach (Door door in Main.instance.GetDungeonGenerator().doors)
             if (door.position == pos) return door;
         return null;
-    }
-
-    private bool RangeContainsIntExclusive(int value, int a, int b)
-    {
-        int min = Mathf.Min(a, b);
-        int max = Mathf.Max(a, b);
-        return value > min && value < max;
     }
 
     private IEnumerator DefaultLoad()

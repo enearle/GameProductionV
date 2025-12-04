@@ -12,10 +12,10 @@ public class Doors
         public Vector3Int size;
     }
     
-    public static Door CreateDoor(Section section, DungeonGenerator.MinimumMutators minimums)
+    public static Door CreateDoor(Section section, DungeonGenerator.Specifications specs)
     {
-        int wallThickness = minimums.wallThickness;
-        int doorOffset = CorridorOffsetToDoorOffset(section.corridorOffset, minimums);
+        int wallThickness = specs.wallThickness;
+        int doorOffset = CorridorOffsetToDoorOffset(section.corridorOffset, specs);
 
         Door door = new Door();
         switch (section.direction)
@@ -24,38 +24,38 @@ public class Doors
                 door = new Door()
                 {
                     position =  new Vector3Int(section.corridorOffset == 0 ? 
-                            section.position.x + section.size.x / 2 - minimums.doorWidth / 2 : 
+                            section.position.x + section.size.x / 2 - specs.doorWidth / 2 : 
                             section.position.x + doorOffset, 
                             section.position.y, section.position.z + section.size.z),
-                    size = new Vector3Int(minimums.doorWidth, minimums.floorHeight, wallThickness)
+                    size = new Vector3Int(specs.doorWidth, specs.floorHeight, wallThickness)
                 };
                 break;
             case Direction.North:
                 door = new Door()
                 {
                     position = new Vector3Int(section.corridorOffset == 0 ?
-                        section.position.x + section.size.x / 2 - minimums.doorWidth / 2 :
+                        section.position.x + section.size.x / 2 - specs.doorWidth / 2 :
                         section.position.x + doorOffset,
                         section.position.y, section.position.z - wallThickness),
-                    size = new Vector3Int(minimums.doorWidth, minimums.floorHeight, wallThickness)
+                    size = new Vector3Int(specs.doorWidth, specs.floorHeight, wallThickness)
                 };
                 break;
             case Direction.East:
                 door = new Door()
                 {
                     position = new Vector3Int(section.position.x - wallThickness, section.position.y, 
-                        section.corridorOffset == 0 ? section.position.z + section.size.z / 2 - minimums.doorWidth / 2 :
+                        section.corridorOffset == 0 ? section.position.z + section.size.z / 2 - specs.doorWidth / 2 :
                             section.position.z + doorOffset),
-                    size = new Vector3Int(wallThickness, minimums.floorHeight, minimums.doorWidth)
+                    size = new Vector3Int(wallThickness, specs.floorHeight, specs.doorWidth)
                 };
                 break;
             case Direction.West:
                 door = new Door()
                 {
                     position = new Vector3Int(section.position.x + section.size.x, section.position.y,
-                        section.corridorOffset == 0 ? section.position.z + section.size.z / 2 - minimums.doorWidth / 2 :
+                        section.corridorOffset == 0 ? section.position.z + section.size.z / 2 - specs.doorWidth / 2 :
                             section.position.z + doorOffset),
-                    size = new Vector3Int(wallThickness, minimums.floorHeight, minimums.doorWidth)
+                    size = new Vector3Int(wallThickness, specs.floorHeight, specs.doorWidth)
                 };
                 break;
             default:
@@ -116,15 +116,15 @@ public class Doors
         }
     }
     
-    public static int DoorOffsetToCorridorOffset(int doorOffset, DungeonGenerator.MinimumMutators minimums)
+    public static int DoorOffsetToCorridorOffset(int doorOffset, DungeonGenerator.Specifications specs)
     {
-        int difference = (minimums.corridorSize - minimums.doorWidth) / 2;
+        int difference = (specs.corridorSize - specs.doorWidth) / 2;
         return doorOffset - difference;
     }
 
-    public static int CorridorOffsetToDoorOffset(int corridorOffset, DungeonGenerator.MinimumMutators minimums)
+    public static int CorridorOffsetToDoorOffset(int corridorOffset, DungeonGenerator.Specifications specs)
     {
-        int difference = (minimums.corridorSize - minimums.doorWidth) / 2;
+        int difference = (specs.corridorSize - specs.doorWidth) / 2;
         return corridorOffset + difference;
     }
 }

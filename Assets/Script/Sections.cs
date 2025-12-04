@@ -1,7 +1,9 @@
 using System.Collections.Generic;
+using NUnit.Framework;
 using UnityEngine;
 using static Directions;
 using static Walls;
+using static Helpers;
 
 public static class Sections
 {
@@ -274,6 +276,26 @@ public static class Sections
             }
 
             return walls;
+        }
+
+        public void RollToSetRegion(float entropy, List<Region> regions)
+        {
+            entropy = Mathf.Clamp(entropy, 0, 1);
+            float inverseEntropy = 1 - entropy;
+            float exponentialInverseEntropy = inverseEntropy * inverseEntropy;
+
+            if (regionIndex >= 0 || Random.Range(0, 1) > exponentialInverseEntropy)
+                return;
+            
+            List<int> availableRegions = new List<int>();
+
+            for (int i = 0; i < regions.Count; i++)
+                if (RangeContainsFloatInclusive(entropy, regions[i].minEntropy, regions[i].maxEntropy))
+                    availableRegions.Add(i);
+            
+            Assert.IsTrue(availableRegions.Count > 0, "No regions available for entropy value of: " + entropy);
+            
+            regionIndex = availableRegions[Random.Range(0, availableRegions.Count)];
         }
     }
 }
