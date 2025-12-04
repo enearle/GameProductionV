@@ -2,6 +2,7 @@ using UnityEngine;
 
 public class RegionMesh : MonoBehaviour
 {
+    [SerializeField] MeshLayer meshLayerPrefab;
     private MeshLayer roomFloorLayer;
     private MeshLayer roomCeilingLayer;
     private MeshLayer roomWallLayer;
@@ -15,23 +16,23 @@ public class RegionMesh : MonoBehaviour
         if (region.name != "")
             gameObject.name = region.name;
         
-        roomFloorLayer = gameObject.AddComponent<MeshLayer>();
+        roomFloorLayer = Instantiate(meshLayerPrefab).GetComponent<MeshLayer>();
         roomFloorLayer.gameObject.name = "Room Floor";
         roomFloorLayer.SetMaterial(region.roomFloorMaterial);
-        roomCeilingLayer = gameObject.AddComponent<MeshLayer>();
+        roomCeilingLayer = Instantiate(meshLayerPrefab).GetComponent<MeshLayer>();
         roomCeilingLayer.gameObject.name = "Room Ceiling";
         roomCeilingLayer.SetMaterial(region.roomCeilingMaterial);
-        roomWallLayer = gameObject.AddComponent<MeshLayer>();
+        roomWallLayer = Instantiate(meshLayerPrefab).GetComponent<MeshLayer>();
         roomWallLayer.gameObject.name = "Room Wall";
         roomWallLayer.SetMaterial(region.roomWallMaterial);
         
-        corridorFloorLayer = gameObject.AddComponent<MeshLayer>();
+        corridorFloorLayer = Instantiate(meshLayerPrefab).GetComponent<MeshLayer>();
         corridorFloorLayer.gameObject.name = "Corridor Floor";
         corridorFloorLayer.SetMaterial(region.corridorFloorMaterial);
-        corridorCeilingLayer = gameObject.AddComponent<MeshLayer>();
+        corridorCeilingLayer = Instantiate(meshLayerPrefab).GetComponent<MeshLayer>();
         corridorCeilingLayer.gameObject.name = "Corridor Ceiling";
         corridorCeilingLayer.SetMaterial(region.corridorCeilingMaterial);
-        corridorWallLayer = gameObject.AddComponent<MeshLayer>();
+        corridorWallLayer = Instantiate(meshLayerPrefab).GetComponent<MeshLayer>();
         corridorWallLayer.gameObject.name = "Corridor Wall";
         corridorWallLayer.SetMaterial(region.corridorWallMaterial);
     }
@@ -46,7 +47,7 @@ public class RegionMesh : MonoBehaviour
         roomCeilingLayer.AddCeilingGeometryToMesh(pos, size, uvScale, worldScale);
     }
     
-    public void AddWallGeometry(Vector3Int pos, Vector3Int size, Vector2 uvScale, Vector3 worldScale, bool isVertical, bool flip)
+    public void AddRoomWallGeometry(Vector3Int pos, Vector3Int size, Vector2 uvScale, Vector3 worldScale, bool isVertical, bool flip)
     {
         roomWallLayer.AddWallGeometryToMesh(pos, size, uvScale, worldScale, isVertical, flip);
     }

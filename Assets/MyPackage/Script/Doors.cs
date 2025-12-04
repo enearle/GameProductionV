@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.Assertions;
 using static Sections;
@@ -10,6 +11,23 @@ public class Doors
     {
         public Vector3Int position;
         public Vector3Int size;
+    }
+    
+    public struct DoorOffset : IComparable
+    {
+        public Door door;
+        public int offset;
+    
+        public DoorOffset(Door door, int offset)
+        {
+            this.door = door;
+            this.offset = offset;
+        }
+        
+        public int CompareTo(object obj)
+        {
+            return offset.CompareTo(((DoorOffset)obj).offset);
+        }
     }
     
     public static Door CreateDoor(Section section, DungeonGenerator.Specifications specs)
@@ -62,6 +80,8 @@ public class Doors
                 door = new Door();
                 break;
         }
+        
+        section.leadingDoor = door;
 
         return door;
     }
@@ -75,9 +95,9 @@ public class Doors
                 int doorX = door.position.x;
                 if (doorX >= room.position.x && doorX + door.size.x <= room.position.x + room.size.x)
                 {
-                    room.southDoors.Add(doorX);
+                    room.southDoors.Add(new DoorOffset(door, doorX));
                     if (room.leadingRoom != null)
-                        room.leadingRoom.northDoors.Add(doorX);
+                        room.leadingRoom.northDoors.Add(new DoorOffset(door, doorX));
                 }
             }
             else
@@ -85,9 +105,9 @@ public class Doors
                 int doorX = door.position.x;
                 if (doorX >= room.position.x && doorX + door.size.x <= room.position.x + room.size.x)
                 {
-                    room.northDoors.Add(doorX);
+                    room.northDoors.Add(new DoorOffset(door, doorX));
                     if (room.leadingRoom != null)
-                        room.leadingRoom.southDoors.Add(doorX);
+                        room.leadingRoom.southDoors.Add(new DoorOffset(door, doorX));
                 }
             }
         }
@@ -98,9 +118,9 @@ public class Doors
                 int doorZ = door.position.z;
                 if (doorZ >= room.position.z && doorZ + door.size.z <= room.position.z + room.size.z)
                 {
-                    room.westDoors.Add(doorZ);
+                    room.westDoors.Add(new DoorOffset(door, doorZ));
                     if (room.leadingRoom != null)
-                        room.leadingRoom.eastDoors.Add(doorZ);
+                        room.leadingRoom.eastDoors.Add(new DoorOffset(door, doorZ));
                 }
             }
             else
@@ -108,9 +128,9 @@ public class Doors
                 int doorZ = door.position.z;
                 if (doorZ >= room.position.z && doorZ + door.size.z <= room.position.z + room.size.z)
                 {
-                    room.eastDoors.Add(doorZ);
+                    room.eastDoors.Add(new DoorOffset(door, doorZ));
                     if (room.leadingRoom != null)
-                        room.leadingRoom.westDoors.Add(doorZ);
+                        room.leadingRoom.westDoors.Add(new DoorOffset(door, doorZ));
                 }
             }
         }

@@ -26,6 +26,7 @@ public class DungeonGenerator : MonoBehaviour
         public float entropyThreshold;
         public float macroThreshold;
         public List<Region> regions;
+        public Vector2 UVScale;
     }
 
     private static UInt64 calls = 0;
@@ -34,6 +35,7 @@ public class DungeonGenerator : MonoBehaviour
     public List<Section> rooms = new List<Section>();
     public List<Section> floors = new List<Section>(); // In case I want to retroactively make changes to the dungeon
     public List<Door> doors = new List<Door>();
+    public List<Door> corridorDoors = new List<Door>(); 
     public float deepRatio = 0.9f;
     private int zeroPoint;
     private int maxPoint;
@@ -66,8 +68,14 @@ public class DungeonGenerator : MonoBehaviour
             if (i == 0)
                 Debug.Log("Room 1: " + rooms[i].corridorOffset + " " + rooms[i].isCorridor);
             Door door = CreateDoor(rooms[i], specs);
-            doors.Add(door);
+            if (rooms[i].isCorridor)
+                corridorDoors.Add(door);
+            else
+                doors.Add(door);
             AddDoorToRoom(rooms[i], door);
+            
+            if (rooms[i].regionIndex == -1)
+                rooms[i].regionIndex = Random.Range(0, specs.regions.Count);
         }
     }
 
@@ -240,10 +248,10 @@ public class DungeonGenerator : MonoBehaviour
     {
         section.divisionType = DivisionType.ThreeSection;
         SectionBounds parentBounds = new SectionBounds(section.position, section.size);
-        SectionBounds corridorBounds = new SectionBounds(parentBounds.YPos, parentBounds.height);
-        SectionBounds rightBounds = new SectionBounds(parentBounds.YPos, parentBounds.height);
-        SectionBounds leftBounds = new SectionBounds(parentBounds.YPos, parentBounds.height);
-        SectionBounds endBounds = new SectionBounds(parentBounds.YPos, parentBounds.height);
+        SectionBounds corridorBounds = new SectionBounds(parentBounds.yPos, parentBounds.height);
+        SectionBounds rightBounds = new SectionBounds(parentBounds.yPos, parentBounds.height);
+        SectionBounds leftBounds = new SectionBounds(parentBounds.yPos, parentBounds.height);
+        SectionBounds endBounds = new SectionBounds(parentBounds.yPos, parentBounds.height);
         
         int wallThickness = specs.wallThickness;
         bool isDeep = false;

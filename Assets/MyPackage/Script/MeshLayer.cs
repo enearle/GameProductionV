@@ -21,6 +21,7 @@ public class MeshLayer : MonoBehaviour
     {
         Vector3[] newVertices = new Vector3[4]
         {
+            
             Vector3.Scale(pos, worldScale),
             Vector3.Scale(pos + new Vector3(size.x, 0, 0), worldScale),
             Vector3.Scale(pos + new Vector3(0, 0, size.z) , worldScale),
@@ -37,7 +38,7 @@ public class MeshLayer : MonoBehaviour
         
         Vector2[] newUvs = new Vector2[4]
         {
-            new Vector2(pos.x, pos.z),
+            Vector2.Scale(new Vector2(pos.x, pos.z), uvScale),
             Vector2.Scale(new Vector2(pos.x + size.x, pos.z), uvScale),
             Vector2.Scale(new Vector2(pos.x, pos.z + size.z), uvScale),
             Vector2.Scale(new Vector2(pos.x + size.x, pos.z + size.z), uvScale)
@@ -61,6 +62,7 @@ public class MeshLayer : MonoBehaviour
     
     public void AddCeilingGeometryToMesh(Vector3Int pos, Vector3Int size, Vector2 uvScale, Vector3 worldScale)
     {
+        pos += new Vector3Int(0, size.y, 0);
         Vector3[] newVertices = new Vector3[4]
         {
             Vector3.Scale(pos, worldScale),
@@ -79,7 +81,7 @@ public class MeshLayer : MonoBehaviour
         
         Vector2[] newUvs = new Vector2[4]
         {
-            new Vector2(pos.x, pos.z),
+            Vector2.Scale(new Vector2(pos.x, pos.z), uvScale),
             Vector2.Scale(new Vector2(pos.x + size.x, pos.z), uvScale),
             Vector2.Scale(new Vector2(pos.x, pos.z + size.z), uvScale),
             Vector2.Scale(new Vector2(pos.x + size.x, pos.z + size.z), uvScale)
@@ -163,10 +165,14 @@ public class MeshLayer : MonoBehaviour
 
         Vector2[] newUvs = new Vector2[4]
         {
-            new Vector2(0, 0),
-            new Vector2(isXAxis ? size.x * uvScale.x : size.z * uvScale.x, 0),
-            new Vector2(0, size.y * uvScale.y),
-            new Vector2(isXAxis ? size.x * uvScale.x : size.z * uvScale.x, size.y * uvScale.y)
+            new Vector2((isXAxis ? pos.x : pos.z) * uvScale.x, 
+                pos.y * uvScale.y),
+            new Vector2((isXAxis ? (pos.x + size.x) : (pos.z + size.z)) * uvScale.x, 
+                pos.y * uvScale.y),
+            new Vector2((isXAxis ? pos.x : pos.z) * uvScale.x,
+                (pos.y + size.y) * uvScale.y),
+            new Vector2((isXAxis ? (pos.x + size.x):(pos.z + size.z)) * uvScale.x, 
+                (pos.y + size.y) * uvScale.y)
         };
 
         // Flip triangle winding order when face is flipped

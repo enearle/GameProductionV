@@ -4,6 +4,7 @@ using UnityEngine;
 using static Directions;
 using static Walls;
 using static Helpers;
+using static Doors;
 
 public static class Sections
 {
@@ -25,7 +26,7 @@ public static class Sections
             maxZ = position.z + size.z;
             minX = position.x;
             minZ = position.z;
-            YPos = position.y;
+            yPos = position.y;
             height = size.y;
         }
 
@@ -35,7 +36,7 @@ public static class Sections
             maxZ = 0;
             minX = 0;
             minZ = 0;
-            this.YPos = yPos;
+            this.yPos = yPos;
             this.height = height;
         }
         
@@ -43,12 +44,12 @@ public static class Sections
         public int maxZ;
         public int minX;
         public int minZ;
-        public int YPos;
+        public int yPos;
         public int height;
 
         public Vector3Int GetPosition()
         {
-            return new Vector3Int(minX, YPos, minZ);
+            return new Vector3Int(minX, yPos, minZ);
         }
         
         public Vector3Int GetSize()
@@ -102,11 +103,12 @@ public static class Sections
         public int corridorOffset;
         public DivisionType divisionType = DivisionType.None;
         public int regionIndex = -1;
+        public Door leadingDoor;
         
-        public List<int> northDoors;
-        public List<int> southDoors;
-        public List<int> eastDoors;
-        public List<int> westDoors;
+        public List<DoorOffset> northDoors;
+        public List<DoorOffset> southDoors;
+        public List<DoorOffset> eastDoors;
+        public List<DoorOffset> westDoors;
 
         public Section()
         {
@@ -119,10 +121,10 @@ public static class Sections
             this.isCorridor = false;
             this.parent = null;
             
-            northDoors = new List<int>();
-            southDoors = new List<int>();
-            eastDoors = new List<int>();
-            westDoors = new List<int>();
+            northDoors = new List<DoorOffset>();
+            southDoors = new List<DoorOffset>();
+            eastDoors = new List<DoorOffset>();
+            westDoors = new List<DoorOffset>();
         }
         
         public Section(Section other, bool copyCorridorOffset = false, bool copyParent = true, bool copyChildren = false)
@@ -139,10 +141,10 @@ public static class Sections
             this.corridorOffset = copyCorridorOffset ? other.corridorOffset : 0;
             this.regionIndex = other.regionIndex;
             
-            northDoors = new List<int>();
-            southDoors = new List<int>();
-            eastDoors = new List<int>();
-            westDoors = new List<int>();
+            northDoors = new List<DoorOffset>();
+            southDoors = new List<DoorOffset>();
+            eastDoors = new List<DoorOffset>();
+            westDoors = new List<DoorOffset>();
         }
             
         
@@ -178,20 +180,20 @@ public static class Sections
             {
                 // Start wall from left edge to first door
                 Vector3Int pos = position + new Vector3Int(0, 0, size.z);
-                Vector3Int currentPos = pos + new Vector3Int(northDoors[0] - position.x, size.y, 0);
+                Vector3Int currentPos = pos + new Vector3Int(northDoors[0].offset - position.x, size.y, 0);
                 walls[wallIndex++] = new Wall(pos, currentPos - pos, Direction.South);
                 
                 // Process each door
                 for (int i = 0; i < northDoors.Count; i++)
                 {
                     // Add wall segment above door
-                    Vector3Int doorWallPos = pos + new Vector3Int(northDoors[i] - position.x, doorHeight, 0);
+                    Vector3Int doorWallPos = pos + new Vector3Int(northDoors[i].offset - position.x, doorHeight, 0);
                     Vector3Int doorWallSize = new Vector3Int(doorWidth, size.y - doorHeight, 0);
                     walls[wallIndex++] = new Wall(doorWallPos, doorWallSize, Direction.South);
                     
                     // Add wall segment to next door or end
-                    int nextX = (i + 1 < northDoors.Count) ? northDoors[i + 1] - position.x : size.x;
-                    Vector3Int wallStart = pos + new Vector3Int(northDoors[i] - position.x + doorWidth, 0, 0);
+                    int nextX = (i + 1 < northDoors.Count) ? northDoors[i + 1].offset - position.x : size.x;
+                    Vector3Int wallStart = pos + new Vector3Int(northDoors[i].offset - position.x + doorWidth, 0, 0);
                     Vector3Int wallEnd = pos + new Vector3Int(nextX, size.y, 0);
                     walls[wallIndex++] = new Wall(wallStart, wallEnd - wallStart, Direction.South);
                 }
@@ -207,17 +209,17 @@ public static class Sections
             if (southDoors.Count > 0)
             {
                 Vector3Int pos = position;
-                Vector3Int currentPos = pos + new Vector3Int(southDoors[0] - position.x, size.y, 0);
+                Vector3Int currentPos = pos + new Vector3Int(southDoors[0].offset - position.x, size.y, 0);
                 walls[wallIndex++] = new Wall(pos, currentPos - pos, Direction.North);
                 
                 for (int i = 0; i < southDoors.Count; i++)
                 {
-                    Vector3Int doorWallPos = pos + new Vector3Int(southDoors[i] - position.x, doorHeight, 0);
+                    Vector3Int doorWallPos = pos + new Vector3Int(southDoors[i].offset - position.x, doorHeight, 0);
                     Vector3Int doorWallSize = new Vector3Int(doorWidth, size.y - doorHeight, 0);
                     walls[wallIndex++] = new Wall(doorWallPos, doorWallSize, Direction.North);
                     
-                    int nextX = (i + 1 < southDoors.Count) ? southDoors[i + 1] - position.x : size.x;
-                    Vector3Int wallStart = pos + new Vector3Int(southDoors[i] - position.x + doorWidth, 0, 0);
+                    int nextX = (i + 1 < southDoors.Count) ? southDoors[i + 1].offset - position.x : size.x;
+                    Vector3Int wallStart = pos + new Vector3Int(southDoors[i].offset - position.x + doorWidth, 0, 0);
                     Vector3Int wallEnd = pos + new Vector3Int(nextX, size.y, 0);
                     walls[wallIndex++] = new Wall(wallStart, wallEnd - wallStart, Direction.North);
                 }
@@ -231,17 +233,17 @@ public static class Sections
             if (eastDoors.Count > 0)
             {
                 Vector3Int pos = position + new Vector3Int(size.x, 0, 0);
-                Vector3Int currentPos = pos + new Vector3Int(0, size.y, eastDoors[0] - position.z);
+                Vector3Int currentPos = pos + new Vector3Int(0, size.y, eastDoors[0].offset - position.z);
                 walls[wallIndex++] = new Wall(pos, currentPos - pos, Direction.West);
                 
                 for (int i = 0; i < eastDoors.Count; i++)
                 {
-                    Vector3Int doorWallPos = pos + new Vector3Int(0, doorHeight, eastDoors[i] - position.z);
+                    Vector3Int doorWallPos = pos + new Vector3Int(0, doorHeight, eastDoors[i].offset - position.z);
                     Vector3Int doorWallSize = new Vector3Int(0, size.y - doorHeight, doorWidth);
                     walls[wallIndex++] = new Wall(doorWallPos, doorWallSize, Direction.West);
                     
-                    int nextZ = (i + 1 < eastDoors.Count) ? eastDoors[i + 1] - position.z : size.z;
-                    Vector3Int wallStart = pos + new Vector3Int(0, 0, eastDoors[i] - position.z + doorWidth);
+                    int nextZ = (i + 1 < eastDoors.Count) ? eastDoors[i + 1].offset - position.z : size.z;
+                    Vector3Int wallStart = pos + new Vector3Int(0, 0, eastDoors[i].offset - position.z + doorWidth);
                     Vector3Int wallEnd = pos + new Vector3Int(0, size.y, nextZ);
                     walls[wallIndex++] = new Wall(wallStart, wallEnd - wallStart, Direction.West);
                 }
@@ -255,17 +257,17 @@ public static class Sections
             if (westDoors.Count > 0)
             {
                 Vector3Int pos = position;
-                Vector3Int currentPos = pos + new Vector3Int(0, size.y, westDoors[0] - position.z);
+                Vector3Int currentPos = pos + new Vector3Int(0, size.y, westDoors[0].offset - position.z);
                 walls[wallIndex++] = new Wall(pos, currentPos - pos, Direction.East);
                 
                 for (int i = 0; i < westDoors.Count; i++)
                 {
-                    Vector3Int doorWallPos = pos + new Vector3Int(0, doorHeight, westDoors[i] - position.z);
+                    Vector3Int doorWallPos = pos + new Vector3Int(0, doorHeight, westDoors[i].offset - position.z);
                     Vector3Int doorWallSize = new Vector3Int(0, size.y - doorHeight, doorWidth);
                     walls[wallIndex++] = new Wall(doorWallPos, doorWallSize, Direction.East);
                     
-                    int nextZ = (i + 1 < westDoors.Count) ? westDoors[i + 1] - position.z : size.z;
-                    Vector3Int wallStart = pos + new Vector3Int(0, 0, westDoors[i] - position.z + doorWidth);
+                    int nextZ = (i + 1 < westDoors.Count) ? westDoors[i + 1].offset - position.z : size.z;
+                    Vector3Int wallStart = pos + new Vector3Int(0, 0, westDoors[i].offset - position.z + doorWidth);
                     Vector3Int wallEnd = pos + new Vector3Int(0, size.y, nextZ);
                     walls[wallIndex++] = new Wall(wallStart, wallEnd - wallStart, Direction.East);
                 }
@@ -282,9 +284,8 @@ public static class Sections
         {
             entropy = Mathf.Clamp(entropy, 0, 1);
             float inverseEntropy = 1 - entropy;
-            float exponentialInverseEntropy = inverseEntropy * inverseEntropy;
 
-            if (regionIndex >= 0 || Random.Range(0, 1) > exponentialInverseEntropy)
+            if (regionIndex >= 0 || Random.Range(0.1f, 1) > inverseEntropy)
                 return;
             
             List<int> availableRegions = new List<int>();

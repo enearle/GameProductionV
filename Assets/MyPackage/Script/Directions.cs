@@ -48,5 +48,22 @@ public static class Directions
                 return direction;
         }
     }
+
+    public static Vector3 DirectionToVector(Direction dir)
+    {
+        switch (dir)
+        {
+            case Direction.North:
+                return Vector3.forward;
+            case Direction.South:
+                return Vector3.back;
+            case Direction.West:
+                return Vector3.left;
+            case Direction.East:
+                return Vector3.right;
+            default:
+                return Vector3.forward;
+        }
+    }
     
 }
