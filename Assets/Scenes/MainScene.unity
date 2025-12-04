@@ -466,7 +466,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4999415590987207629, guid: 7fbe03392651ab54baaa17d4d45d76b0, type: 3}
       propertyPath: specifications.regions.Array.data[1].name
-      value: Area 1
+      value: Area 2
       objectReference: {fileID: 0}
     - target: {fileID: 4999415590987207629, guid: 7fbe03392651ab54baaa17d4d45d76b0, type: 3}
       propertyPath: specifications.regions.Array.data[0].doorPrefab
