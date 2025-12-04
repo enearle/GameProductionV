@@ -675,21 +675,43 @@ public class DungeonGenerator : MonoBehaviour
         bottomLeftQuadrant.parent = section;
         bottomRightQuadrant.parent = section;
         
-        topLeftQuadrant = RandomBool() 
-            ? BufferQuadrant(topLeftQuadrant, Direction.North, Direction.West, corridorA, mainCorridor)
-            : BufferQuadrant(topLeftQuadrant, Direction.West, Direction.North, mainCorridor, corridorA);
-
-        topRightQuadrant = RandomBool() 
-            ? BufferQuadrant(topRightQuadrant, Direction.North, Direction.East, corridorB, mainCorridor)
-            : BufferQuadrant(topRightQuadrant, Direction.East, Direction.North, mainCorridor, corridorA);
         
-        bottomLeftQuadrant = RandomBool() 
-            ? BufferQuadrant(bottomLeftQuadrant, Direction.South, Direction.West, corridorA, mainCorridor)
-            : BufferQuadrant(bottomLeftQuadrant, Direction.West, Direction.South,  mainCorridor, corridorB);
-    
-        bottomRightQuadrant = RandomBool()
-            ? BufferQuadrant(bottomRightQuadrant, Direction.South, Direction.East, corridorB, mainCorridor)
-            : BufferQuadrant(bottomRightQuadrant, Direction.East, Direction.South, mainCorridor, corridorB);
+        if (isVertical)
+        {
+            topLeftQuadrant = RandomBool()
+                ? BufferQuadrant(topLeftQuadrant, Direction.North, Direction.West, corridorA, mainCorridor)
+                : BufferQuadrant(topLeftQuadrant, Direction.West, Direction.North, mainCorridor, corridorA);
+
+            topRightQuadrant = RandomBool()
+                ? BufferQuadrant(topRightQuadrant, Direction.North, Direction.East, corridorB, mainCorridor)
+                : BufferQuadrant(topRightQuadrant, Direction.East, Direction.North, mainCorridor, corridorB);
+
+            bottomLeftQuadrant = RandomBool()
+                ? BufferQuadrant(bottomLeftQuadrant, Direction.South, Direction.West, corridorA, mainCorridor)
+                : BufferQuadrant(bottomLeftQuadrant, Direction.West, Direction.South, mainCorridor, corridorA);
+
+            bottomRightQuadrant = RandomBool()
+                ? BufferQuadrant(bottomRightQuadrant, Direction.South, Direction.East, corridorB, mainCorridor)
+                : BufferQuadrant(bottomRightQuadrant, Direction.East, Direction.South, mainCorridor, corridorB);
+        }
+        else
+        {
+            topLeftQuadrant = RandomBool()
+                ? BufferQuadrant(topLeftQuadrant, Direction.North, Direction.West, mainCorridor, corridorA)
+                : BufferQuadrant(topLeftQuadrant, Direction.West, Direction.North, corridorA, mainCorridor);
+
+            topRightQuadrant = RandomBool()
+                ? BufferQuadrant(topRightQuadrant, Direction.North, Direction.East, mainCorridor, corridorA)
+                : BufferQuadrant(topRightQuadrant, Direction.East, Direction.North, corridorA, mainCorridor);
+
+            bottomLeftQuadrant = RandomBool()
+                ? BufferQuadrant(bottomLeftQuadrant, Direction.South, Direction.West, mainCorridor, corridorB)
+                : BufferQuadrant(bottomLeftQuadrant, Direction.West, Direction.South, corridorB, mainCorridor);
+
+            bottomRightQuadrant = RandomBool()
+                ? BufferQuadrant(bottomRightQuadrant, Direction.South, Direction.East, mainCorridor, corridorB)
+                : BufferQuadrant(bottomRightQuadrant, Direction.East, Direction.South, corridorB, mainCorridor);
+        }
         
         section.children.Add(mainCorridor);
         rooms.Add(mainCorridor);

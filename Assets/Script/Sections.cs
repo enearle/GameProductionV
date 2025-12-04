@@ -99,6 +99,7 @@ public static class Sections
         public bool isMacroSideCorridor = false;
         public int corridorOffset;
         public DivisionType divisionType = DivisionType.None;
+        public int regionIndex = -1;
         
         public List<int> northDoors;
         public List<int> southDoors;
@@ -134,6 +135,7 @@ public static class Sections
             this.children = copyChildren ? new List<Section>(other.children) : new List<Section>();
             this.parent = copyParent ? other.parent : null;
             this.corridorOffset = copyCorridorOffset ? other.corridorOffset : 0;
+            this.regionIndex = other.regionIndex;
             
             northDoors = new List<int>();
             southDoors = new List<int>();

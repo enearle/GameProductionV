@@ -4,6 +4,8 @@ using static DungeonGenerator;
 using static Directions;
 using static Walls;
 
+
+
 public class Main : MonoBehaviour
 {
     private DungeonGenerator dungeonGenerator;
@@ -14,6 +16,7 @@ public class Main : MonoBehaviour
     [SerializeField] private int seed = 0;
     [SerializeField] private Direction startDirection = Direction.North;
     [SerializeField] private GameObject meshLayerPrefab;
+    [SerializeField] private bool debugMode = false;
     
     // For testing /////////////////////////////////////////////////////////////////////////////////////////////////////
     public static Main instance;
@@ -46,6 +49,20 @@ public class Main : MonoBehaviour
             return;
         }
         
+        if(debugMode)
+            CreateDungeonDebug();
+        else
+            CreateDungeon();
+        
+    }
+
+    public void CreateDungeon()
+    {
+        
+    }
+
+    public void CreateDungeonDebug()
+    {
         doorFloorLayer = Instantiate(meshLayerPrefab).GetComponent<MeshLayer>();
         doorFloorLayer.gameObject.name = "Door Floor Layer";
         roomFloorLayer = Instantiate(meshLayerPrefab).GetComponent<MeshLayer>();
